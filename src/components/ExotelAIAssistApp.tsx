@@ -21,8 +21,8 @@ function Header({ sentiment, botConfig }: { sentiment: Sentiment | null; botConf
   const getSentimentIcon = () => {
     if (!sentiment) return null;
     if (sentiment.label === "positive") return <Smile size={18} />;
-    if (sentiment.label === "neutral") return <Meh size={18} />;
-    return <Frown size={18} />;
+    if (sentiment.label === "negative") return <Frown size={18} />;
+    return <Meh size={18} />;
   };
 
   const getSentimentColor = (): "amber" | "gray" | "red" => {

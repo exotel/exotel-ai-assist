@@ -21,8 +21,6 @@ function buildWsUrl(params: ExotelAIAssistParams): string {
   const base = resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
   const extraEntries = Object.entries(extra).slice(0, MAX_EXTRA_QUERY_PARAMS);
   const query = new URLSearchParams({
-    conversation_id: callSid,
-    source,
     ...Object.fromEntries(extraEntries.map(([k, v]) => [k, String(v)])),
   });
   return `${base}?${query.toString()}`;
