@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from "react";
-import { Theme, Tabs, Flex, Box, Heading, Text, IconButton, Tooltip } from "@radix-ui/themes";
-import { Lightbulb, FileText, Copy, Info } from "lucide-react";
+import { Theme, Tabs, Flex, Box, Heading, Badge, Text, IconButton, Tooltip } from "@radix-ui/themes";
+import { Lightbulb, FileText, Copy, Info, Smile, Meh, Frown } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 
 import { useExotelAIAssist } from "../hooks/useExotelAIAssist";
-import { ExotelAIAssistParams, Suggestion, TranscriptLine, BotConfig } from "../types";
+import { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, BotConfig } from "../types";
 import LoadingBox from "./LoadingBox";
 import { EmptyState } from "./EmptyState";
 import "../styles/index.css";
@@ -15,8 +15,21 @@ import { Sparkle } from "./logos/Sparkle";
 // Header
 // ---------------------------------------------------------------------------
 
-function Header({ botConfig }: { botConfig: BotConfig | null }): JSX.Element {
+function Header({ sentiment, botConfig }: { sentiment: Sentiment | null; botConfig: BotConfig | null }): JSX.Element {
   const isDeactivated = botConfig?.status === "DRAFT" || botConfig?.status === "DEACTIVATED";
+
+  const getSentimentIcon = () => {
+    if (!sentiment) return null;
+    if (sentiment.label === "positive") return <Smile size={18} />;
+    if (sentiment.label === "neutral") return <Meh size={18} />;
+    return <Frown size={18} />;
+  };
+
+  const getSentimentColor = (): "amber" | "gray" | "red" => {
+    if (sentiment?.label === "positive") return "amber";
+    if (sentiment?.label === "negative") return "red";
+    return "gray";
+  };
 
   return (
     <Flex align="center" justify="between" py="4">
@@ -27,7 +40,14 @@ function Header({ botConfig }: { botConfig: BotConfig | null }): JSX.Element {
         </Heading>
       </Flex>
 
-      {isDeactivated ? (
+      {sentiment && botConfig?.sentiment === true ? (
+        <Badge color={getSentimentColor()} variant="soft" style={{ fontSize: "15px", padding: "5px", borderRadius: "10px" }}>
+          <Flex align="center" gap="1">
+            {getSentimentIcon()}
+            <span style={{ textTransform: "capitalize" }}>{sentiment.label}</span>
+          </Flex>
+        </Badge>
+      ) : isDeactivated ? (
         <Tooltip content="Assistant is deactivated. Contact your administrator to activate it.">
           <span style={{ display: "inline-flex", alignItems: "center", cursor: "help" }} aria-label="Assistant deactivated">
             <Info size={18} />
@@ -183,7 +203,7 @@ export interface ExotelAIAssistProps extends ExotelAIAssistParams {
 }
 
 export function ExotelAIAssist({ className, ...params }: ExotelAIAssistProps): JSX.Element {
-  const { status, suggestions, transcripts, botConfig } = useExotelAIAssist(params as ExotelAIAssistParams);
+  const { status, suggestions, transcripts, sentiment, botConfig } = useExotelAIAssist(params as ExotelAIAssistParams);
 
   const connected = status === "connected";
 
@@ -191,7 +211,7 @@ export function ExotelAIAssist({ className, ...params }: ExotelAIAssistProps): J
     <Theme className="oa-theme-root">
       <Box className={`oa-panel${className ? ` ${className}` : ""}`}>
         <Flex direction="column" style={{ flex: 1, width: "100%", minHeight: 0, padding: "0 16px" }}>
-          <Header botConfig={botConfig} />
+          <Header sentiment={sentiment} botConfig={botConfig} />
 
           <Tabs.Root defaultValue="suggestions" className="oa-tabs" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
             <Tabs.List>

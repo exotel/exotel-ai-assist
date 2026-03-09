@@ -20,4 +20,4 @@ export function unmountExotelAIAssist(container: HTMLElement): void {
 }
 
 export { ExotelAIAssistController } from "./controller";
-export type { ExotelAIAssistParams, Suggestion, TranscriptLine, ConnectionStatus } from "./types";
+export type { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, ConnectionStatus } from "./types";

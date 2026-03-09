@@ -32,6 +32,12 @@ export interface TranscriptLine {
   isFinal: boolean;
 }
 
+/** The latest sentiment label for the call. */
+export interface Sentiment {
+  label: "positive" | "neutral" | "negative";
+  timestamp: number;
+}
+
 export type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "error";
 
 // ---------------------------------------------------------------------------
@@ -78,6 +84,7 @@ export interface WssResponse {
 export interface ControllerEvents {
   suggestion: (data: Suggestion) => void;
   transcript: (lines: TranscriptLine[]) => void;
+  sentiment: (data: Sentiment) => void;
   /** Internal: bot feature-flag config. Consumed by the UI component only. */
   botConfig: (config: BotConfig) => void;
   onCallStart: (data: { callSid: string }) => void;

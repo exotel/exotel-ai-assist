@@ -241,6 +241,7 @@ Extends `EventEmitter`.
 | -------------- | ------------------ | -------------------------------------- |
 | `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)  |
 | `transcript`   | `TranscriptLine[]` | Live transcript update                 |
+| `sentiment`    | `Sentiment`        | Sentiment label update                 |
 | `onCallStart`  | `{ callSid }`      | Connection opened                      |
 | `onCallEnd`    | `{ callSid }`      | Connection closed                      |
 | `statusChange` | `ConnectionStatus` | Status transition                      |
@@ -266,6 +267,11 @@ interface TranscriptLine {
   startTime: number;
   endTime: number;
   isFinal: boolean;
+}
+
+interface Sentiment {
+  label: "positive" | "neutral" | "negative";
+  timestamp: number;
 }
 ```
 

@@ -3,7 +3,7 @@ export { ExotelAIAssistProvider, useExotelAIAssistContext } from "../components/
 export { useExotelAIAssist } from "../hooks/useExotelAIAssist";
 export { ExotelAIAssistController } from "../controller";
 
-export type { ExotelAIAssistParams, Suggestion, TranscriptLine, ConnectionStatus } from "../types";
+export type { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, ConnectionStatus } from "../types";
 export type { UseExotelAIAssistReturn } from "../hooks/useExotelAIAssist";
 export type { ExotelAIAssistProps } from "../components/ExotelAIAssistApp";
 export type { ExotelAIAssistProviderProps } from "../components/ExotelAIAssistProvider";

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ExotelAIAssistController } from "../controller";
-import { ExotelAIAssistParams, Suggestion, TranscriptLine, BotConfig, ConnectionStatus } from "../types";
+import { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, BotConfig, ConnectionStatus } from "../types";
 
 const MAX_SUGGESTIONS = 50;
 
@@ -10,6 +10,8 @@ export interface UseExotelAIAssistReturn {
   suggestions: Suggestion[];
   /** Live transcript lines, ordered by start time. */
   transcripts: TranscriptLine[];
+  /** Latest sentiment reading, or null before the first event. */
+  sentiment: Sentiment | null;
   lastError: Error | null;
   connect: () => void;
   disconnect: () => void;
@@ -28,6 +30,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [transcripts, setTranscripts] = useState<TranscriptLine[]>([]);
+  const [sentiment, setSentiment] = useState<Sentiment | null>(null);
   const [botConfig, setBotConfig] = useState<BotConfig | null>(null);
   const [lastError, setLastError] = useState<Error | null>(null);
 
@@ -42,6 +45,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     ctrl.on("statusChange", setStatus);
     ctrl.on("botConfig", setBotConfig);
     ctrl.on("suggestion", (s) => setSuggestions((prev) => [...prev, s].slice(-MAX_SUGGESTIONS)));
+    ctrl.on("sentiment", setSentiment);
     ctrl.on("transcript", (lines) =>
       setTranscripts((prev) => {
         const map = new Map(prev.map((l) => [l.id, l]));
@@ -72,6 +76,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
       prevCallSidRef.current = params.callSid;
       setSuggestions([]);
       setTranscripts([]);
+      setSentiment(null);
       setBotConfig(null);
       setLastError(null);
     }
@@ -88,5 +93,5 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const disconnect = useCallback(() => controllerRef.current?.disconnect(), []);
   const setParams = useCallback((patch: Partial<ExotelAIAssistParams>) => controllerRef.current?.setParams(patch), []);
 
-  return { status, suggestions, transcripts, botConfig, lastError, connect, disconnect, setParams };
+  return { status, suggestions, transcripts, sentiment, botConfig, lastError, connect, disconnect, setParams };
 }

@@ -1,5 +1,5 @@
 import EventEmitter from "eventemitter3";
-import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, WssEvent, InitialHandshakeResponse, WssResponse } from "../types";
+import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse } from "../types";
 import { ITransport, createTransport } from "../transport";
 
 function genId(): string {
@@ -175,6 +175,14 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
           timestamp: now,
         };
         this.emit("suggestion", suggestion);
+      }
+
+      if (event.event_type === "sentiment" && event.text) {
+        const sentiment: Sentiment = {
+          label: event.text.toLowerCase() as Sentiment["label"],
+          timestamp: now,
+        };
+        this.emit("sentiment", sentiment);
       }
     }
   }
