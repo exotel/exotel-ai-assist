@@ -25,20 +25,63 @@ React is **bundled inside** the default build. You do **not** need React install
 
 ## Quick Start — Plain HTML / Vanilla JS
 
-```html
-<div id="ai-assist" style="height: 500px;"></div>
+> **Note:** Browsers cannot resolve bare specifiers (`@exotel-npm-dev/...`) in `<script type="module">` without a bundler or an import map. Choose one of the approaches below.
 
-<script type="module">
-  import { mountExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist";
+### Option A — Recommended: Vite (or any bundler)
 
-  mountExotelAIAssist(document.getElementById("ai-assist"), {
-    authToken: "your-auth-token",
-    callSid: "CALL-SID-001",
-    accountId: "your-account-id",
-    source: "your-source-id",
-  });
-</script>
+```bash
+npm create vite@latest my-app -- --template vanilla
+cd my-app
+npm install @exotel-npm-dev/exotel-ai-assist
 ```
+
+```js
+// main.js
+import { mountExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist";
+
+mountExotelAIAssist(document.getElementById("ai-assist"), {
+  authToken: "your-auth-token",
+  callSid: "CALL-SID-001",
+  accountId: "your-account-id",
+  source: "your-source-id",
+});
+```
+
+### Option B — Import map (no bundler, static server)
+
+Add an import map **before** your module script so the browser knows where to find the package:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@exotel-npm-dev/exotel-ai-assist": "./node_modules/@exotel-npm-dev/exotel-ai-assist/dist/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="ai-assist" style="height: 500px;"></div>
+
+    <script type="module">
+      import { mountExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist";
+
+      mountExotelAIAssist(document.getElementById("ai-assist"), {
+        authToken: "your-auth-token",
+        callSid: "CALL-SID-001",
+        accountId: "your-account-id",
+        source: "your-source-id",
+      });
+    </script>
+  </body>
+</html>
+```
+
+> Requires a local HTTP server (e.g. `npx serve .`) so that `node_modules` is accessible. Opening `index.html` as a `file://` URL will not work.
 
 ### Unmounting
 
