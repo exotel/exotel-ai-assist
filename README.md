@@ -1,6 +1,6 @@
 # @exotel-npm-dev/exotel-ai-assist
 
-Real-time AI suggestions, live transcript, and sentiment analysis for Exotel calls — delivered over WebSocket.
+Real-time AI suggestions and live transcript for Exotel calls — delivered over WebSocket.
 
 ## Features
 
@@ -36,18 +36,8 @@ React is **bundled inside** the default build. You do **not** need React install
     callSid: "CALL-SID-001",
     accountId: "your-account-id",
     source: "your-source-id",
-    // wssBaseUrl is optional — defaults to the Exotel AI Assist backend
   });
 </script>
-```
-
-### Updating params without remounting
-
-```js
-import { updateExotelAIAssistParams } from "@exotel-npm-dev/exotel-ai-assist";
-
-// Triggers reconnect because callSid changed
-updateExotelAIAssistParams(container, { callSid: "CALL-SID-002" });
 ```
 
 ### Unmounting
@@ -70,7 +60,6 @@ import { ExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist/react";
 function AgentDashboard() {
   return (
     <div style={{ height: 500 }}>
-      {/* wssBaseUrl is optional — defaults to the Exotel AI Assist backend */}
       <ExotelAIAssist authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id" source="your-source-id" />
     </div>
   );
@@ -83,12 +72,11 @@ function AgentDashboard() {
 import { useExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist/react";
 
 function MyCustomUI({ callSid }: { callSid: string }) {
-  const { status, suggestions, transcripts, sentiment, lastError } = useExotelAIAssist({
+  const { status, suggestions, transcripts, lastError } = useExotelAIAssist({
     authToken: "your-auth-token",
     callSid,
     accountId: "your-account-id",
     source: "your-source-id",
-    // wssBaseUrl defaults to the Exotel AI Assist backend
   });
 
   return (
@@ -142,19 +130,16 @@ const ctrl = new ExotelAIAssistController({
   callSid: "CALL-SID-001",
   accountId: "your-account-id",
   source: "your-source-id",
-  // wssBaseUrl defaults to the Exotel AI Assist backend
-  debug: true,
 });
 
 ctrl.on("suggestion", (s) => console.log("Suggestion:", s));
 ctrl.on("transcript", (t) => console.log("Transcript:", t));
-ctrl.on("sentiment", (s) => console.log("Sentiment:", s));
 ctrl.on("statusChange", (status) => console.log("Status:", status));
 ctrl.on("error", (err) => console.error("Error:", err));
 
 ctrl.connect();
 
-// Later — switch to a new call
+// Switch to a new call
 ctrl.setParams({ callSid: "CALL-SID-002" });
 
 // Clean up
@@ -178,10 +163,6 @@ Mounts the widget into a DOM element.
 
 Unmounts and cleans up the widget.
 
-### `updateExotelAIAssistParams(container, patch)`
-
-Merges a partial params patch. If `callSid` changes, reconnects automatically.
-
 ---
 
 ### `ExotelAIAssistController`
@@ -190,15 +171,16 @@ Extends `EventEmitter`.
 
 #### Constructor options (`ExotelAIAssistParams`)
 
-| Field                  | Type     | Required | Default                  | Description                                              |
-| ---------------------- | -------- | -------- | ------------------------ | -------------------------------------------------------- |
-| `authToken`            | `string` | ✓        | —                        | Bearer token                                             |
-| `callSid`              | `string` | ✓        | —                        | Active call SID                                          |
-| `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                |
-| `source`               | `string` | ✓        | —                        | Source identifier (e.g. agent ID, integration name)      |
-| `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint |
-| `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                               |
-| `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                 |
+| Field                  | Type     | Required | Default                  | Description                                                                 |
+| ---------------------- | -------- | -------- | ------------------------ | --------------------------------------------------------------------------- |
+| `authToken`            | `string` | ✓        | —                        | Bearer token                                                                |
+| `callSid`              | `string` | ✓        | —                        | Active call SID                                                             |
+| `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                                   |
+| `source`               | `string` | ✓        | —                        | Source identifier (e.g. agent ID, integration name)                         |
+| `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint                    |
+| `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                                                  |
+| `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                                    |
+| `[extraParam]`         | `string` | —        | —                        | Up to 2 additional query params appended to the WebSocket URL (max 5 total) |
 
 #### Methods
 
@@ -214,9 +196,8 @@ Extends `EventEmitter`.
 
 | Event          | Payload            | Description                            |
 | -------------- | ------------------ | -------------------------------------- |
-| `suggestion`   | `Suggestion`       | New AI suggestion                      |
-| `transcript`   | `TranscriptLine`   | Live transcript update                 |
-| `sentiment`    | `SentimentScore`   | Sentiment update                       |
+| `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)  |
+| `transcript`   | `TranscriptLine[]` | Live transcript update                 |
 | `onCallStart`  | `{ callSid }`      | Connection opened                      |
 | `onCallEnd`    | `{ callSid }`      | Connection closed                      |
 | `statusChange` | `ConnectionStatus` | Status transition                      |
@@ -233,24 +214,15 @@ type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "
 interface Suggestion {
   id: string;
   text: string;
-  confidence: number;
-  category?: string;
   timestamp: number;
 }
 
 interface TranscriptLine {
   id: string;
-  speaker: "agent" | "customer";
   text: string;
   startTime: number;
   endTime: number;
   isFinal: boolean;
-}
-
-interface SentimentScore {
-  label: "positive" | "neutral" | "negative";
-  score: number;
-  timestamp: number;
 }
 ```
 
@@ -261,13 +233,17 @@ interface SentimentScore {
 ### URL
 
 ```
-wss://<wssBaseUrl>?authToken=<token>&callSid=<sid>&accountId=<accountId>&source=<source>&[...extraParams]
+wss://<wssBaseUrl>?conversation_id=<callSid>&source=<source>&[up to 3 extra params]
 ```
+
+`authToken` is **not** sent as a query parameter. It is transmitted in the WebSocket handshake as the `Sec-WebSocket-Protocol` header — the standard browser mechanism for passing credentials during a WebSocket upgrade.
+
+A maximum of **5 query parameters** are sent (2 fixed + up to 3 extra). Extra params beyond the limit are silently dropped.
 
 ### Server → Client message envelope
 
 ```json
-{ "type": "suggestion | transcript | sentiment | ping", "payload": {}, "timestamp": 1712345678901 }
+{ "type": "suggestion | transcript | ping", "payload": {}, "timestamp": 1712345678901 }
 ```
 
 ### Client → Server messages
@@ -280,7 +256,6 @@ wss://<wssBaseUrl>?authToken=<token>&callSid=<sid>&accountId=<accountId>&source=
 ### Reconnection
 
 - Exponential back-off: `delay = Math.min(baseInterval × 2^attempt, 30 000)`
-- Auth failure (close code `4001`): error emitted, **no** retry
 - After `maxReconnectAttempts`: `error` emitted with `code = MAX_RECONNECT_EXCEEDED`
 
 ---
