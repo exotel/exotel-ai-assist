@@ -1,0 +1,188 @@
+@import "@radix-ui/themes/styles.css";
+
+/* -----------------------------------------------------------------------
+   Base
+   ----------------------------------------------------------------------- */
+.oa-panel {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    sans-serif;
+}
+
+/* Ensure the Radix Theme wrapper fills its container too */
+.oa-theme-root {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* -----------------------------------------------------------------------
+   Header
+   ----------------------------------------------------------------------- */
+.oa-header-title {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20px;
+  color: #111827;
+}
+
+/* -----------------------------------------------------------------------
+   Tabs
+   ----------------------------------------------------------------------- */
+.oa-tabs {
+  width: 100%;
+}
+
+/* Force Radix Tabs.Content to participate in the flex chain so only
+   the content area scrolls — not the whole app */
+.oa-tabs .rt-TabsContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.oa-tabs .rt-TabsList {
+  padding: 0;
+  gap: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.oa-tabs .rt-TabsTrigger {
+  position: relative;
+  padding: 10px 0;
+  background: transparent;
+  color: #6b7280;
+  font-weight: 500;
+  border-radius: 0;
+}
+
+.oa-tabs .rt-TabsTrigger:hover {
+  cursor: pointer;
+}
+
+.oa-tabs .rt-TabsTrigger[data-state="active"] {
+  color: #2563eb;
+}
+
+.oa-tabs .rt-TabsTrigger[data-state="active"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: #2563eb;
+  border-radius: 2px;
+}
+
+/* -----------------------------------------------------------------------
+   Suggestion cards
+   ----------------------------------------------------------------------- */
+.oa-suggestion-card {
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.04);
+}
+
+/* Wrapper for most-recent card: animated gradient border */
+.oa-suggestion-card--recent-wrapper {
+  padding: 2px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #7c3aed, #e11d48, #7c3aed);
+  background-size: 200% 100%;
+  animation:
+    oa-suggestion-enter 0.4s ease-out,
+    oa-border-shimmer 3s ease-in-out 0.4s infinite;
+}
+
+.oa-suggestion-card--recent-wrapper .oa-suggestion-card--recent {
+  border: none;
+}
+
+.oa-suggestion-card--recent {
+  background: linear-gradient(to right, #f5f3ff 0%, #fef3f2 50%, #fff7ed 100%);
+  border-radius: 9px;
+  animation: none;
+}
+
+.oa-suggestion-card--older {
+  background: #f5f5f5;
+  border: 1px solid #e5e7eb;
+}
+
+.oa-suggestion-card--older .oa-suggestion-text {
+  color: #252525;
+}
+
+@keyframes oa-suggestion-enter {
+  from {
+    opacity: 0.3;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes oa-border-shimmer {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.oa-suggestion-text {
+  color: #111827;
+  font-size: 13px;
+  line-height: 18px;
+  white-space: pre-wrap;
+}
+
+/* -----------------------------------------------------------------------
+   Copy icon button
+   ----------------------------------------------------------------------- */
+.oa-copy-icon.rt-IconButton {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  cursor: pointer;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.oa-copy-icon.rt-IconButton:hover {
+  background: #f9fafb;
+  color: #374151;
+}
+
+/* -----------------------------------------------------------------------
+   Misc helpers
+   ----------------------------------------------------------------------- */
+.oa-muted {
+  color: #6b7280;
+}
