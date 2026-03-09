@@ -25,13 +25,14 @@ export class BroadcastChannelTransport implements ITransport {
   private lockReleaser: (() => void) | null = null;
 
   /**
-   * @param callSid - Scopes the BroadcastChannel and Navigator Lock to this
-   *   call. Tabs with the same callSid share one WebSocket; tabs with a
-   *   different callSid get a fully independent connection.
+   * @param sessionHash - A hash of all connection-relevant params (see
+   *   Utils.hashParams). Tabs with identical params share one WebSocket;
+   *   any differing param produces a different hash and therefore a fully
+   *   independent connection.
    */
-  constructor(callSid: string) {
-    const channelName = `exotel-ai-assist:${callSid}`;
-    const lockName = `exotel-ai-assist-leader:${callSid}`;
+  constructor(sessionHash: string) {
+    const channelName = `exotel-ai-assist:${sessionHash}`;
+    const lockName = `exotel-ai-assist-leader:${sessionHash}`;
 
     this.channel = new BroadcastChannel(channelName);
     this.channel.onmessage = (ev: MessageEvent<InternalMessage>) => {
@@ -153,6 +154,6 @@ export class BroadcastChannelTransport implements ITransport {
   }
 }
 
-export function createTransport(callSid: string): ITransport {
-  return new BroadcastChannelTransport(callSid);
+export function createTransport(sessionHash: string): ITransport {
+  return new BroadcastChannelTransport(sessionHash);
 }

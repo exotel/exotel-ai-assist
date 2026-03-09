@@ -1,30 +1,7 @@
 import EventEmitter from "eventemitter3";
 import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse } from "../types";
 import { ITransport, createTransport } from "../transport";
-
-function genId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-function getWssBaseUrl(accountId: string): string {
-  return `wss://ai-assist.in.exotel.com/ai-assist/accounts/${accountId}/one-assistant-event-publisher`;
-}
-
-const MAX_EXTRA_QUERY_PARAMS = 5;
-
-function buildWsUrl(params: ExotelAIAssistParams): string {
-  const { authToken: _authToken, callSid, accountId, source, wssBaseUrl, reconnectInterval, maxReconnectAttempts, debug, ...extra } = params;
-  const resolved = wssBaseUrl ?? getWssBaseUrl(accountId);
-  const base = resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
-  const extraEntries = Object.entries(extra).slice(0, MAX_EXTRA_QUERY_PARAMS);
-  const query = new URLSearchParams({
-    ...Object.fromEntries(extraEntries.map(([k, v]) => [k, String(v)])),
-  });
-  return `${base}?${query.toString()}`;
-}
+import { Utils } from "../utils";
 
 export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   private params: ExotelAIAssistParams;
@@ -50,8 +27,8 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     if (this.destroyed) return;
     this._clearReconnectTimer();
     this._setStatus("connecting");
-    this._ensureTransport(this.params.callSid);
-    this.transport!.connect(buildWsUrl(this.params), this.params.authToken);
+    this._ensureTransport();
+    this.transport!.connect(Utils.buildWsUrl(this.params), this.params.authToken);
   }
 
   disconnect(): void {
@@ -69,13 +46,13 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       this.reconnectAttempt = 0;
       this._clearReconnectTimer();
       // Destroy (not just disconnect) so the next _ensureTransport call creates
-      // a new instance scoped to the new callSid.
+      // a new instance scoped to the new session hash.
       this.transport?.destroy();
       this.transport = null;
       if (this.params.callSid) {
         this._setStatus("connecting");
-        this._ensureTransport(this.params.callSid);
-        this.transport!.connect(buildWsUrl(this.params), this.params.authToken);
+        this._ensureTransport();
+        this.transport!.connect(Utils.buildWsUrl(this.params), this.params.authToken);
       } else {
         this._setStatus("idle");
       }
@@ -96,9 +73,9 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     return this.status;
   }
 
-  private _ensureTransport(callSid: string): void {
+  private _ensureTransport(): void {
     if (this.transport) return;
-    this.transport = createTransport(callSid);
+    this.transport = createTransport(Utils.hash(this.params));
     this.transport.onMessage((msg) => this._handleTransportMessage(msg));
   }
 
@@ -168,7 +145,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
       if (event.event_type === "suggestion" && event.text) {
         const suggestion: Suggestion = {
-          id: genId(),
+          id: Utils.getUniqueId(),
           text: event.text,
           timestamp: now,
         };
@@ -203,7 +180,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       if (this.destroyed) return;
       this.reconnectAttempt += 1;
       this._setStatus("connecting");
-      this.transport?.connect(buildWsUrl(this.params), this.params.authToken);
+      this.transport?.connect(Utils.buildWsUrl(this.params), this.params.authToken);
     }, delay);
   }
 
