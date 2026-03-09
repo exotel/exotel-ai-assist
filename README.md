@@ -34,6 +34,8 @@ React is **bundled inside** the default build. You do **not** need React install
   mountExotelAIAssist(document.getElementById("ai-assist"), {
     authToken: "your-auth-token",
     callSid: "CALL-SID-001",
+    accountId: "your-account-id",
+    source: "your-source-id",
     // wssBaseUrl is optional — defaults to the Exotel AI Assist backend
   });
 </script>
@@ -69,7 +71,7 @@ function AgentDashboard() {
   return (
     <div style={{ height: 500 }}>
       {/* wssBaseUrl is optional — defaults to the Exotel AI Assist backend */}
-      <ExotelAIAssist authToken="your-auth-token" callSid="CALL-SID-001" />
+      <ExotelAIAssist authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id" source="your-source-id" />
     </div>
   );
 }
@@ -84,6 +86,8 @@ function MyCustomUI({ callSid }: { callSid: string }) {
   const { status, suggestions, transcripts, sentiment, lastError } = useExotelAIAssist({
     authToken: "your-auth-token",
     callSid,
+    accountId: "your-account-id",
+    source: "your-source-id",
     // wssBaseUrl defaults to the Exotel AI Assist backend
   });
 
@@ -105,7 +109,7 @@ import { ExotelAIAssistProvider, useExotelAIAssistContext } from "@exotel-npm-de
 
 function App() {
   return (
-    <ExotelAIAssistProvider authToken="your-auth-token" callSid="CALL-SID-001">
+    <ExotelAIAssistProvider authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id" source="your-source-id">
       <SuggestionsPanel />
       <TranscriptPanel />
     </ExotelAIAssistProvider>
@@ -136,6 +140,8 @@ import { ExotelAIAssistController } from "@exotel-npm-dev/exotel-ai-assist/contr
 const ctrl = new ExotelAIAssistController({
   authToken: "your-auth-token",
   callSid: "CALL-SID-001",
+  accountId: "your-account-id",
+  source: "your-source-id",
   // wssBaseUrl defaults to the Exotel AI Assist backend
   debug: true,
 });
@@ -184,14 +190,15 @@ Extends `EventEmitter`.
 
 #### Constructor options (`ExotelAIAssistParams`)
 
-| Field                  | Type      | Required | Default                  | Description                                              |
-| ---------------------- | --------- | -------- | ------------------------ | -------------------------------------------------------- |
-| `authToken`            | `string`  | ✓        | —                        | Bearer token                                             |
-| `callSid`              | `string`  | ✓        | —                        | Active call SID                                          |
-| `wssBaseUrl`           | `string`  | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint |
-| `reconnectInterval`    | `number`  | —        | `3000`                   | Base reconnect delay in ms                               |
-| `maxReconnectAttempts` | `number`  | —        | `5`                      | Max retries before error                                 |
-|                             |
+| Field                  | Type     | Required | Default                  | Description                                              |
+| ---------------------- | -------- | -------- | ------------------------ | -------------------------------------------------------- |
+| `authToken`            | `string` | ✓        | —                        | Bearer token                                             |
+| `callSid`              | `string` | ✓        | —                        | Active call SID                                          |
+| `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                |
+| `source`               | `string` | ✓        | —                        | Source identifier (e.g. agent ID, integration name)      |
+| `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint |
+| `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                               |
+| `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                 |
 
 #### Methods
 
@@ -254,7 +261,7 @@ interface SentimentScore {
 ### URL
 
 ```
-wss://<wssBaseUrl>?authToken=<token>&callSid=<sid>&[...extraParams]
+wss://<wssBaseUrl>?authToken=<token>&callSid=<sid>&accountId=<accountId>&source=<source>&[...extraParams]
 ```
 
 ### Server → Client message envelope

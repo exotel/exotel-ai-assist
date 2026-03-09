@@ -17,18 +17,23 @@ function sentimentScore(label: string): number {
 }
 
 /** Production AI Assist WebSocket endpoint — used when wssBaseUrl is not supplied. */
-const DEFAULT_WSS_BASE_URL = "wss://oneassist-uat.in.exotel.com/ai-assist/one-assistant-event-publisher";
+// const DEFAULT_WSS_BASE_URL = "wss://ai-assist.in.exotel.com/ai-assist/one-assistant-event-publisher";
+
+function getWssBaseUrl(accountId: string): string {
+  return `wss://ai-assist.in.exotel.com/ai-assist/accounts/${accountId}/one-assistant-event-publisher`;
+}
 
 function buildWsUrl(params: ExotelAIAssistParams): string {
-  const { authToken, callSid, wssBaseUrl, reconnectInterval, maxReconnectAttempts, debug, ...extra } = params;
-  const resolved = wssBaseUrl ?? DEFAULT_WSS_BASE_URL;
+  const { authToken, callSid, accountId, source, wssBaseUrl, reconnectInterval, maxReconnectAttempts, debug, ...extra } = params;
+  const resolved = wssBaseUrl ?? getWssBaseUrl(accountId);
   const base = resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
   const query = new URLSearchParams({
     authToken,
-    callSid,
+    conversation_id:callSid,
+    source,
     ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [k, String(v)])),
   });
-  return `${base}/${callSid}?${query.toString()}`;
+  return `${base}?${query.toString()}`;
 }
 
 export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
