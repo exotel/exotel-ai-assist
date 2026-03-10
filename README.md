@@ -214,16 +214,16 @@ Extends `EventEmitter`.
 
 #### Constructor options (`ExotelAIAssistParams`)
 
-| Field                  | Type     | Required | Default                  | Description                                                                 |
-| ---------------------- | -------- | -------- | ------------------------ | --------------------------------------------------------------------------- |
-| `authToken`            | `string` | ✓        | —                        | Bearer token                                                                |
-| `callSid`              | `string` | ✓        | —                        | Active call SID                                                             |
-| `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                                   |
-| `source`               | `string` | ✓        | —                        | Source identifier (e.g. agent ID, integration name)                         |
-| `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint                    |
-| `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                                                  |
-| `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                                    |
-| `[extraParam]`         | `string` | —        | —                        | Up to 2 additional query params appended to the WebSocket URL (max 5 total) |
+| Field                  | Type     | Required | Default                  | Description                                                                                                                          |
+| ---------------------- | -------- | -------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `authToken`            | `string` | ✓        | —                        | Bearer token                                                                                                                         |
+| `callSid`              | `string` | ✓        | —                        | Active call SID                                                                                                                      |
+| `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                                                                                            |
+| `source`               | `string` | ✓        | —                        | Source identifier (e.g. agent ID, integration name)                                                                                  |
+| `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint                                                                             |
+| `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                                                                                                           |
+| `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                                                                                             |
+| `[customParam]`        | `string` | —        | —                        | Any extra key–value pairs are forwarded as custom WebSocket URL query params (up to 5; extras beyond the limit are silently dropped) |
 
 #### Methods
 
@@ -281,13 +281,11 @@ interface Sentiment {
 
 ### URL
 
-```
-wss://<wssBaseUrl>?conversation_id=<callSid>&source=<source>&[up to 3 extra params]
-```
+When `wssBaseUrl` is provided it overrides the host + path portion:
 
-`authToken` is **not** sent as a query parameter. It is transmitted in the WebSocket handshake as the `Sec-WebSocket-Protocol` header — the standard browser mechanism for passing credentials during a WebSocket upgrade.
-
-A maximum of **5 query parameters** are sent (2 fixed + up to 3 extra). Extra params beyond the limit are silently dropped.
+```
+wss://<wssBaseUrl>?[customParam1=value1&customParam2=value2&...]
+```
 
 ### Server → Client message envelope
 
