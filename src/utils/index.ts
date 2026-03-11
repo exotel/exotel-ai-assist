@@ -38,10 +38,10 @@ export class Utils {
    * @returns The WebSocket URL.
    */
   static buildWsUrl(params: ExotelAIAssistParams): string {
-    const { authToken: _authToken, callSid, accountId, source, wssBaseUrl, reconnectInterval, maxReconnectAttempts, debug, ...extra } = params;
-    const resolved = wssBaseUrl ?? Utils.getWssBaseUrl(accountId);
+    // Just for testing purposes
+    const resolved = params.wssBaseUrl ?? Utils.getWssBaseUrl(params.accountId);
     const base = resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
-    const extraEntries = Object.entries(extra).slice(0, Utils.MAX_EXTRA_QUERY_PARAMS);
+    const extraEntries = Object.entries(params).slice(0, Utils.MAX_EXTRA_QUERY_PARAMS);
     const query = new URLSearchParams({
       ...Object.fromEntries(extraEntries.map(([k, v]) => [k, String(v)])),
     });
