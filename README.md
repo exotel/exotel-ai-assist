@@ -6,7 +6,7 @@ Real-time AI suggestions and live transcript for Exotel calls — delivered over
 
 - **One WebSocket per browser session** — uses `SharedWorker` (with `BroadcastChannel` + Navigator Locks fallback) so multiple open tabs share a single connection
 - **Auto-reconnect** with exponential back-off
-- **Live `callSid` switching** — closing the old connection and opening a new one automatically
+- **Live `call_sid` switching** — closing the old connection and opening a new one automatically
 - **Framework-agnostic** — works in Vue, Angular, vanilla JS, or plain HTML
 - **React subpath** for React apps that want to avoid bundling React twice
 - **Headless controller** subpath for raw data with no UI
@@ -41,7 +41,7 @@ import { mountExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist";
 
 mountExotelAIAssist(document.getElementById("ai-assist"), {
   authToken: "your-auth-token",
-  callSid: "CALL-SID-001",
+  call_sid: "CALL-SID-001",
   accountId: "your-account-id",
 });
 ```
@@ -71,7 +71,7 @@ Add an import map **before** your module script so the browser knows where to fi
 
       mountExotelAIAssist(document.getElementById("ai-assist"), {
         authToken: "your-auth-token",
-        callSid: "CALL-SID-001",
+        call_sid: "CALL-SID-001",
         accountId: "your-account-id",
       });
     </script>
@@ -101,7 +101,7 @@ import { ExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist/react";
 function AgentDashboard() {
   return (
     <div style={{ height: 500 }}>
-      <ExotelAIAssist authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id" />
+      <ExotelAIAssist authToken="your-auth-token" call_sid="CALL-SID-001" accountId="your-account-id" />
     </div>
   );
 }
@@ -112,10 +112,10 @@ function AgentDashboard() {
 ```tsx
 import { useExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist/react";
 
-function MyCustomUI({ callSid }: { callSid: string }) {
+function MyCustomUI({ call_sid }: { call_sid: string }) {
   const { status, suggestions, transcripts, lastError } = useExotelAIAssist({
     authToken: "your-auth-token",
-    callSid,
+    call_sid,
     accountId: "your-account-id",
   });
 
@@ -137,7 +137,7 @@ import { ExotelAIAssistProvider, useExotelAIAssistContext } from "@exotel-npm-de
 
 function App() {
   return (
-    <ExotelAIAssistProvider authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id">
+    <ExotelAIAssistProvider authToken="your-auth-token" call_sid="CALL-SID-001" accountId="your-account-id">
       <SuggestionsPanel />
       <TranscriptPanel />
     </ExotelAIAssistProvider>
@@ -167,7 +167,7 @@ import { ExotelAIAssistController } from "@exotel-npm-dev/exotel-ai-assist/contr
 
 const ctrl = new ExotelAIAssistController({
   authToken: "your-auth-token",
-  callSid: "CALL-SID-001",
+  call_sid: "CALL-SID-001",
   accountId: "your-account-id",
 });
 
@@ -179,7 +179,7 @@ ctrl.on("error", (err) => console.error("Error:", err));
 ctrl.connect();
 
 // Switch to a new call
-ctrl.setParams({ callSid: "CALL-SID-002" });
+ctrl.setParams({ call_sid: "CALL-SID-002" });
 
 // Clean up
 ctrl.destroy();
@@ -210,25 +210,25 @@ Extends `EventEmitter`.
 
 #### Constructor options (`ExotelAIAssistParams`)
 
-| Field                  | Type     | Required | Default                  | Description                                                                                                                          |
-| ---------------------- | -------- | -------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `authToken`            | `string` | ✓        | —                        | Bearer token                                                                                                                         |
-| `callSid`              | `string` | ✓        | —                        | Active call SID                                                                                                                      |
-| `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                                                                                            |
-| `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint                                                                             |
-| `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                                                                                                           |
-| `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                                                                                             |
-| `[customParam]`        | `string` | —        | —                        | Max 3 params you can send  |
+| Field                  | Type     | Required | Default                  | Description                                              |
+| ---------------------- | -------- | -------- | ------------------------ | -------------------------------------------------------- |
+| `authToken`            | `string` | ✓        | —                        | Bearer token                                             |
+| `call_sid`             | `string` | ✓        | —                        | Active call SID                                          |
+| `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                |
+| `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint |
+| `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                               |
+| `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                 |
+| `[customParam]`        | `string` | —        | —                        | Max 3 params you can send                                |
 
 #### Methods
 
-| Method             | Description                                   |
-| ------------------ | --------------------------------------------- |
-| `connect()`        | Open the WebSocket                            |
-| `disconnect()`     | Close cleanly                                 |
-| `setParams(patch)` | Merge params; reconnects if `callSid` changes |
-| `destroy()`        | Dispose controller and remove all listeners   |
-| `getStatus()`      | Returns current `ConnectionStatus`            |
+| Method             | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| `connect()`        | Open the WebSocket                             |
+| `disconnect()`     | Close cleanly                                  |
+| `setParams(patch)` | Merge params; reconnects if `call_sid` changes |
+| `destroy()`        | Dispose controller and remove all listeners    |
+| `getStatus()`      | Returns current `ConnectionStatus`             |
 
 #### Events
 
@@ -237,8 +237,8 @@ Extends `EventEmitter`.
 | `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)  |
 | `transcript`   | `TranscriptLine[]` | Live transcript update                 |
 | `sentiment`    | `Sentiment`        | Sentiment label update                 |
-| `onCallStart`  | `unknown`      | Connection opened                      |
-| `onCallEnd`    | `unknown`      | Connection closed                      |
+| `onCallStart`  | `unknown`          | Connection opened                      |
+| `onCallEnd`    | `unknown`          | Connection closed                      |
 | `statusChange` | `ConnectionStatus` | Status transition                      |
 | `error`        | `Error`            | Any error (auth, parse, max-reconnect) |
 | `raw`          | `unknown`          | Every raw server message               |

@@ -1,6 +1,6 @@
 export interface ExotelAIAssistParams {
   authToken: string;
-  callSid: string;
+  call_sid: string;
   /** Exotel account identifier. */
   accountId: string;
   /** WebSocket base URL. Defaults to the Exotel AI Assist backend if omitted. */

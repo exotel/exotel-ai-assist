@@ -88,10 +88,8 @@ export class BroadcastChannelTransport implements ITransport {
     if (this.socket) {
       this.socket.close(1000, "reconnecting");
     }
-    // authToken is passed as a subprotocol so it is sent in the
-    // Sec-WebSocket-Protocol header — the only way to include auth
-    // credentials in a browser WebSocket handshake.
-    this.socket = new WebSocket(url, authToken);
+
+    this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
       this.socketConnected = true;

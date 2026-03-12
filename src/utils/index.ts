@@ -29,7 +29,9 @@ export class Utils {
    * @returns The base WebSocket URL.
    */
   static getWssBaseUrl(accountId: string): string {
-    return `wss://ai-assist.in.exotel.com/ai-assist/accounts/${accountId}/one-assistant-event-publisher`;
+    // return `wss://ai-assist.in.exotel.com/ai-assist/accounts/${accountId}/one-assistant-event-publisher`;
+    // return `wss://oneassist-uat.in.exotel.com/ai-assist/one-assistant-event-publisher/${accountId}`;
+    return `wss://oneassist-uat.in.exotel.com/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
   }
 
   /**
@@ -38,36 +40,38 @@ export class Utils {
    * @returns The WebSocket URL.
    */
   static buildWsUrl(params: ExotelAIAssistParams): string {
-    // Just for testing purposes
-    const { defaultParams, extraParams } = Utils.getDefaultAndExtraParams(params);
-    const resolved = defaultParams.wssBaseUrl ?? Utils.getWssBaseUrl(params.accountId);
+    const { wssBaseUrl } = params;
+
+    const resolved = wssBaseUrl ?? Utils.getWssBaseUrl(params.accountId);
     const base = resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
-    const extraEntries = Object.entries(extraParams).slice(0, Utils.MAX_EXTRA_QUERY_PARAMS);
-    const query = new URLSearchParams({
-      ...defaultParams,
-      ...Object.fromEntries(extraEntries.map(([k, v]) => [k, String(v)])),
-    });
-    return `${base}?${query.toString()}`;
+    const query = Utils.constructQueryParams(params);
+    return `${base}?${query}`;
   }
 
-  static getDefaultAndExtraParams(params: ExotelAIAssistParams): { defaultParams: Record<string, string>; extraParams: Record<string, string> } {
-    const copiedParams = { ...params };
-    const { accountId, authToken, wssBaseUrl, reconnectInterval, maxReconnectAttempts } = copiedParams;
+  static constructQueryParams(params: ExotelAIAssistParams): string {
+    // Keys consumed by the library — never forwarded to the server.
+    const INTERNAL_KEYS = new Set(["authToken", "accountId", "wssBaseUrl", "reconnectInterval", "maxReconnectAttempts"]);
 
-    // Filter out undefined values and coerce numbers to strings so the result
-    // satisfies Record<string, string>.
-    const defaultParams: Record<string, string> = Object.fromEntries(
-      Object.entries({ accountId, authToken, wssBaseUrl, reconnectInterval, maxReconnectAttempts })
-        .filter(([, v]) => v !== undefined && v !== null)
-        .map(([k, v]) => [k, String(v)]),
-    );
+    // Mandatory server params remapped to the names the API expects.
+    // accountId is embedded in the URL path — never sent as a query param.
+    const mandatory: [string, string][] = [["access_token", String(params.authToken)]];
+    if (params.call_sid !== undefined && params.call_sid !== null) {
+      mandatory.push(["call_sid", String(params.call_sid)]);
+    }
 
-    Object.keys(defaultParams).forEach((key) => {
-      delete copiedParams[key];
-    });
+    // Extra caller-supplied params, excluding internals and already-mapped keys.
+    const extra: [string, string][] = (Object.entries(params) as [string, unknown][])
+      .filter(([k, v]) => !INTERNAL_KEYS.has(k) && k !== "call_sid" && v !== undefined && v !== null)
+      .map(([k, v]) => [k, String(v)]);
 
-    const extraParams = Object.fromEntries(Object.entries(copiedParams).map(([k, v]) => [k, String(v)]));
-    return { defaultParams, extraParams };
+    // Build the query string by appending each pair individually.
+    // Passing an array-of-arrays to the URLSearchParams constructor is not
+    // reliable in all environments — some fall back to treating the outer
+    // array as a plain object, turning index 0 into a key and the inner
+    // array's toString() (comma-joined) into the value.
+    const query = new URLSearchParams();
+    [...mandatory, ...extra].forEach(([k, v]) => query.append(k, v));
+    return query.toString();
   }
 
   /**
