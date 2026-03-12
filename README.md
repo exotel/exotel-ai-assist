@@ -43,7 +43,6 @@ mountExotelAIAssist(document.getElementById("ai-assist"), {
   authToken: "your-auth-token",
   callSid: "CALL-SID-001",
   accountId: "your-account-id",
-  source: "your-source-id",
 });
 ```
 
@@ -74,7 +73,6 @@ Add an import map **before** your module script so the browser knows where to fi
         authToken: "your-auth-token",
         callSid: "CALL-SID-001",
         accountId: "your-account-id",
-        source: "your-source-id",
       });
     </script>
   </body>
@@ -103,7 +101,7 @@ import { ExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist/react";
 function AgentDashboard() {
   return (
     <div style={{ height: 500 }}>
-      <ExotelAIAssist authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id" source="your-source-id" />
+      <ExotelAIAssist authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id" />
     </div>
   );
 }
@@ -119,7 +117,6 @@ function MyCustomUI({ callSid }: { callSid: string }) {
     authToken: "your-auth-token",
     callSid,
     accountId: "your-account-id",
-    source: "your-source-id",
   });
 
   return (
@@ -140,7 +137,7 @@ import { ExotelAIAssistProvider, useExotelAIAssistContext } from "@exotel-npm-de
 
 function App() {
   return (
-    <ExotelAIAssistProvider authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id" source="your-source-id">
+    <ExotelAIAssistProvider authToken="your-auth-token" callSid="CALL-SID-001" accountId="your-account-id">
       <SuggestionsPanel />
       <TranscriptPanel />
     </ExotelAIAssistProvider>
@@ -172,7 +169,6 @@ const ctrl = new ExotelAIAssistController({
   authToken: "your-auth-token",
   callSid: "CALL-SID-001",
   accountId: "your-account-id",
-  source: "your-source-id",
 });
 
 ctrl.on("suggestion", (s) => console.log("Suggestion:", s));
@@ -219,11 +215,10 @@ Extends `EventEmitter`.
 | `authToken`            | `string` | ✓        | —                        | Bearer token                                                                                                                         |
 | `callSid`              | `string` | ✓        | —                        | Active call SID                                                                                                                      |
 | `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                                                                                            |
-| `source`               | `string` | ✓        | —                        | Source identifier (e.g. agent ID, integration name)                                                                                  |
 | `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint                                                                             |
 | `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                                                                                                           |
 | `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                                                                                             |
-| `[customParam]`        | `string` | —        | —                        | Any extra key–value pairs are forwarded as custom WebSocket URL query params (up to 5; extras beyond the limit are silently dropped) |
+| `[customParam]`        | `string` | —        | —                        | Max 3 params you can send  |
 
 #### Methods
 
@@ -242,8 +237,8 @@ Extends `EventEmitter`.
 | `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)  |
 | `transcript`   | `TranscriptLine[]` | Live transcript update                 |
 | `sentiment`    | `Sentiment`        | Sentiment label update                 |
-| `onCallStart`  | `{ callSid }`      | Connection opened                      |
-| `onCallEnd`    | `{ callSid }`      | Connection closed                      |
+| `onCallStart`  | `unknown`      | Connection opened                      |
+| `onCallEnd`    | `unknown`      | Connection closed                      |
 | `statusChange` | `ConnectionStatus` | Status transition                      |
 | `error`        | `Error`            | Any error (auth, parse, max-reconnect) |
 | `raw`          | `unknown`          | Every raw server message               |
@@ -285,19 +280,6 @@ When `wssBaseUrl` is provided it overrides the host + path portion:
 
 ```
 wss://<wssBaseUrl>?[customParam1=value1&customParam2=value2&...]
-```
-
-### Server → Client message envelope
-
-```json
-{ "type": "suggestion | transcript | ping", "payload": {}, "timestamp": 1712345678901 }
-```
-
-### Client → Server messages
-
-```json
-{ "type": "pong", "timestamp": 1712345678901 }
-{ "type": "params_update", "payload": { "key": "value" } }
 ```
 
 ### Reconnection

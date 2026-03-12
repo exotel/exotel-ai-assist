@@ -2,7 +2,7 @@ import objectHash from "object-hash";
 import { ExotelAIAssistParams } from "../types";
 
 export class Utils {
-  static MAX_EXTRA_QUERY_PARAMS = 5;
+  static MAX_EXTRA_QUERY_PARAMS = 3;
   /**
    * Returns a deterministic SHA-1 hex digest for any plain object.
    *
@@ -20,7 +20,7 @@ export class Utils {
    * @returns The formatted time string.
    */
   static formatTimestamp(ms: number): string {
-    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
   }
 
   /**
@@ -39,13 +39,35 @@ export class Utils {
    */
   static buildWsUrl(params: ExotelAIAssistParams): string {
     // Just for testing purposes
-    const resolved = params.wssBaseUrl ?? Utils.getWssBaseUrl(params.accountId);
+    const { defaultParams, extraParams } = Utils.getDefaultAndExtraParams(params);
+    const resolved = defaultParams.wssBaseUrl ?? Utils.getWssBaseUrl(params.accountId);
     const base = resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
-    const extraEntries = Object.entries(params).slice(0, Utils.MAX_EXTRA_QUERY_PARAMS);
+    const extraEntries = Object.entries(extraParams).slice(0, Utils.MAX_EXTRA_QUERY_PARAMS);
     const query = new URLSearchParams({
+      ...defaultParams,
       ...Object.fromEntries(extraEntries.map(([k, v]) => [k, String(v)])),
     });
     return `${base}?${query.toString()}`;
+  }
+
+  static getDefaultAndExtraParams(params: ExotelAIAssistParams): { defaultParams: Record<string, string>; extraParams: Record<string, string> } {
+    const copiedParams = { ...params };
+    const { accountId, authToken, wssBaseUrl, reconnectInterval, maxReconnectAttempts } = copiedParams;
+
+    // Filter out undefined values and coerce numbers to strings so the result
+    // satisfies Record<string, string>.
+    const defaultParams: Record<string, string> = Object.fromEntries(
+      Object.entries({ accountId, authToken, wssBaseUrl, reconnectInterval, maxReconnectAttempts })
+        .filter(([, v]) => v !== undefined && v !== null)
+        .map(([k, v]) => [k, String(v)]),
+    );
+
+    Object.keys(defaultParams).forEach((key) => {
+      delete copiedParams[key];
+    });
+
+    const extraParams = Object.fromEntries(Object.entries(copiedParams).map(([k, v]) => [k, String(v)]));
+    return { defaultParams, extraParams };
   }
 
   /**

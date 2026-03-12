@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Flex, Text, Box } from "@radix-ui/themes";
 
 interface LoadingBoxProps {
   message?: string;
@@ -74,7 +73,7 @@ const LoadingBox: React.FC<LoadingBoxProps> = ({ message = "Looking for suggesti
   const skeletonWidths = ["80%", "65%", "45%"];
 
   return (
-    <Box
+    <div
       className={className}
       style={{
         position: "relative",
@@ -85,7 +84,7 @@ const LoadingBox: React.FC<LoadingBoxProps> = ({ message = "Looking for suggesti
       }}
     >
       {/* Rotating snake gradient overlay */}
-      <Box
+      <div
         style={{
           position: "absolute",
           top: 0,
@@ -99,7 +98,7 @@ const LoadingBox: React.FC<LoadingBoxProps> = ({ message = "Looking for suggesti
         }}
       />
       {/* Inner white content */}
-      <Box
+      <div
         style={{
           position: "relative",
           backgroundColor: "#ffffff",
@@ -110,13 +109,11 @@ const LoadingBox: React.FC<LoadingBoxProps> = ({ message = "Looking for suggesti
           zIndex: 2,
         }}
       >
-        <Flex direction="column" gap="3" style={{ height: "100%" }}>
-          <Text size="2" style={{ color: "#6b7280", fontSize: "14px", lineHeight: "20px" }}>
-            {message}
-          </Text>
-          <Flex direction="column" gap="2" style={{ marginTop: "8px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", height: "100%" }}>
+          <span style={{ color: "#6b7280", fontSize: "14px", lineHeight: "20px" }}>{message}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
             {Array.from({ length: skeletonCount }).map((_, index) => (
-              <Box
+              <div
                 key={index}
                 style={{
                   height: "8px",
@@ -127,10 +124,10 @@ const LoadingBox: React.FC<LoadingBoxProps> = ({ message = "Looking for suggesti
                 }}
               />
             ))}
-          </Flex>
-        </Flex>
-      </Box>
-    </Box>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

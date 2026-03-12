@@ -1,14 +1,15 @@
 import React from "react";
-import { Flex, Box, Text, IconButton } from "@radix-ui/themes";
 import { Copy } from "lucide-react";
-import toast from "react-hot-toast";
 
 import { Suggestion, BotConfig } from "../../types";
 import LoadingBox from "../LoadingBox";
 import { EmptyState } from "../EmptyState";
+import { useToast } from "../Toast";
 import "../../styles/index.css";
 
 export function SuggestionsTab({ suggestions, connected, botConfig }: { suggestions: Suggestion[]; connected: boolean; botConfig: BotConfig | null }): JSX.Element {
+  const toast = useToast();
+
   const handleCopy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -37,9 +38,7 @@ export function SuggestionsTab({ suggestions, connected, botConfig }: { suggesti
   const displayed = [...suggestions].reverse();
 
   return (
-    <Flex
-      direction="column"
-      gap="4"
+    <div
       style={{
         flex: 1,
         overflow: "auto",
@@ -48,6 +47,9 @@ export function SuggestionsTab({ suggestions, connected, botConfig }: { suggesti
         marginBottom: "10px",
         paddingLeft: "10px",
         paddingRight: "10px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px",
       }}
     >
       {displayed.map((suggestion, index) => {
@@ -55,28 +57,28 @@ export function SuggestionsTab({ suggestions, connected, botConfig }: { suggesti
         const cardClass = isRecent ? "oa-suggestion-card oa-suggestion-card--recent" : "oa-suggestion-card oa-suggestion-card--older";
 
         return (
-          <Flex key={suggestion.id} direction="row" align="start" gap="2" style={{ alignItems: "flex-start" }}>
+          <div key={suggestion.id} style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: "8px" }}>
             {isRecent ? (
-              <Box className="oa-suggestion-card--recent-wrapper" style={{ flex: "1 1 auto", maxWidth: "80%" }}>
-                <Box className={cardClass}>
-                  <Text className="oa-suggestion-text" style={{ fontSize: "15px" }}>
+              <div className="oa-suggestion-card--recent-wrapper" style={{ flex: "1 1 auto", maxWidth: "80%" }}>
+                <div className={cardClass}>
+                  <span className="oa-suggestion-text" style={{ fontSize: "15px" }}>
                     {suggestion.text}
-                  </Text>
-                </Box>
-              </Box>
+                  </span>
+                </div>
+              </div>
             ) : (
-              <Box className={cardClass} style={{ flex: "1 1 auto", maxWidth: "80%" }}>
-                <Text className="oa-suggestion-text" style={{ fontSize: "15px" }}>
+              <div className={cardClass} style={{ flex: "1 1 auto", maxWidth: "80%" }}>
+                <span className="oa-suggestion-text" style={{ fontSize: "15px" }}>
                   {suggestion.text}
-                </Text>
-              </Box>
+                </span>
+              </div>
             )}
-            <IconButton className="oa-copy-icon" variant="soft" color="gray" aria-label="Copy suggestion" onClick={() => handleCopy(suggestion.text)} style={{ flexShrink: 0, marginTop: "10px" }}>
+            <button className="oa-copy-icon" aria-label="Copy suggestion" onClick={() => handleCopy(suggestion.text)} style={{ flexShrink: 0, marginTop: "10px" }}>
               <Copy size={14} />
-            </IconButton>
-          </Flex>
+            </button>
+          </div>
         );
       })}
-    </Flex>
+    </div>
   );
 }

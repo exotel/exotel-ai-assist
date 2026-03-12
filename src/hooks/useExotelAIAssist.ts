@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ExotelAIAssistController } from "../controller";
 import { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, BotConfig, ConnectionStatus } from "../types";
+import { Utils } from "../utils";
 
 const MAX_SUGGESTIONS = 50;
 
@@ -33,6 +34,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const [sentiment, setSentiment] = useState<Sentiment | null>(null);
   const [botConfig, setBotConfig] = useState<BotConfig | null>(null);
   const [lastError, setLastError] = useState<Error | null>(null);
+  const paramHash = useMemo(() => Utils.hash(params), [params]);
 
   useEffect(() => {
     paramsRef.current = params;
@@ -55,9 +57,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     );
     ctrl.on("error", setLastError);
 
-    if (paramsRef.current.callSid) {
-      ctrl.connect();
-    }
+    ctrl.connect();
 
     return () => {
       ctrl.destroy();
@@ -66,14 +66,14 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const prevCallSidRef = useRef(params.callSid);
+  const prevParamHashRef = useRef(paramHash);
   useEffect(() => {
     if (!controllerRef.current) return;
-    const prevCallSid = prevCallSidRef.current;
-    const callSidChanged = params.callSid !== prevCallSid;
+    const prevParamHash = prevParamHashRef.current;
+    const paramHashChanged = paramHash !== prevParamHash;
 
-    if (callSidChanged) {
-      prevCallSidRef.current = params.callSid;
+    if (paramHashChanged) {
+      prevParamHashRef.current = paramHash;
       setSuggestions([]);
       setTranscripts([]);
       setSentiment(null);
@@ -81,13 +81,9 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
       setLastError(null);
     }
 
-    if (!params.callSid) {
-      return;
-    }
-
     controllerRef.current.setParams(params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.authToken, params.callSid, params.wssBaseUrl]);
+  }, [paramHash]);
 
   const connect = useCallback(() => controllerRef.current?.connect(), []);
   const disconnect = useCallback(() => controllerRef.current?.disconnect(), []);

@@ -1,6 +1,8 @@
-import { Theme, Tabs, Flex, Box } from "@radix-ui/themes";
+import React from "react";
+import * as Tabs from "@radix-ui/react-tabs";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { Lightbulb, FileText } from "lucide-react";
-import { Toaster } from "react-hot-toast";
+import { ToastProvider } from "./Toast";
 
 import { useExotelAIAssist } from "../hooks/useExotelAIAssist";
 import { ExotelAIAssistParams } from "../types";
@@ -19,36 +21,38 @@ export function ExotelAIAssist({ className, ...params }: ExotelAIAssistProps): J
   const connected = status === "connected";
 
   return (
-    <Theme className="oa-theme-root">
-      <Box className={`oa-panel${className ? ` ${className}` : ""}`}>
-        <Flex direction="column" style={{ flex: 1, width: "100%", minHeight: 0, padding: "0 16px" }}>
-          <Header sentiment={sentiment} botConfig={botConfig} />
+    <Tooltip.Provider>
+      <div className="oa-theme-root">
+        <ToastProvider>
+          <div className={`oa-panel${className ? ` ${className}` : ""}`}>
+            <div style={{ flex: 1, width: "100%", minHeight: 0, padding: "0 16px", display: "flex", flexDirection: "column" }}>
+              <Header sentiment={sentiment} botConfig={botConfig} />
 
-          <Tabs.Root defaultValue="suggestions" className="oa-tabs" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-            <Tabs.List>
-              <Tabs.Trigger value="suggestions" style={{ fontSize: "15px" }}>
-                <Lightbulb size={16} />
-                Suggestions
-              </Tabs.Trigger>
-              <Tabs.Trigger value="transcript" aria-label="Transcript" style={{ fontSize: "15px" }}>
-                <FileText size={16} />
-                Transcript
-              </Tabs.Trigger>
-            </Tabs.List>
+              <Tabs.Root defaultValue="suggestions" className="oa-tabs" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                <Tabs.List className="oa-tabs-list">
+                  <Tabs.Trigger value="suggestions" className="oa-tabs-trigger">
+                    <Lightbulb size={16} />
+                    Suggestions
+                  </Tabs.Trigger>
+                  <Tabs.Trigger value="transcript" className="oa-tabs-trigger" aria-label="Transcript">
+                    <FileText size={16} />
+                    Transcript
+                  </Tabs.Trigger>
+                </Tabs.List>
 
-            <Tabs.Content value="suggestions" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, paddingTop: 16 }}>
-              <SuggestionsTab suggestions={suggestions} connected={connected} botConfig={botConfig} />
-            </Tabs.Content>
+                <Tabs.Content value="suggestions" className="oa-tabs-content" style={{ paddingTop: 16 }}>
+                  <SuggestionsTab suggestions={suggestions} connected={connected} botConfig={botConfig} />
+                </Tabs.Content>
 
-            <Tabs.Content value="transcript" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, paddingTop: 16 }}>
-              <TranscriptTab transcripts={transcripts} connected={connected} botConfig={botConfig} />
-            </Tabs.Content>
-          </Tabs.Root>
-        </Flex>
-      </Box>
-
-      <Toaster position="bottom-center" />
-    </Theme>
+                <Tabs.Content value="transcript" className="oa-tabs-content" style={{ paddingTop: 16 }}>
+                  <TranscriptTab transcripts={transcripts} connected={connected} botConfig={botConfig} />
+                </Tabs.Content>
+              </Tabs.Root>
+            </div>
+          </div>
+        </ToastProvider>
+      </div>
+    </Tooltip.Provider>
   );
 }
 

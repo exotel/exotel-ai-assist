@@ -1,5 +1,4 @@
 import React from "react";
-import { Flex, Text } from "@radix-ui/themes";
 import { NoInteraction } from "./logos/NoInteraction";
 
 interface EmptyStateProps {
@@ -22,14 +21,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ title, subtitle }) => {
       }}
     >
       <NoInteraction />
-      <Flex direction="column" align="center" gap="2" style={{ textAlign: "center" }}>
-        <Text size="4" weight="bold" style={{ color: "#111827", fontSize: "16px", lineHeight: "20px" }}>
-          {title}
-        </Text>
-        <Text size="2" style={{ color: "#6b7280", fontSize: "14px", lineHeight: "20px" }}>
-          {subtitle}
-        </Text>
-      </Flex>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", textAlign: "center" }}>
+        <span style={{ color: "#111827", fontSize: "16px", lineHeight: "20px", fontWeight: 700 }}>{title}</span>
+        <span style={{ color: "#6b7280", fontSize: "14px", lineHeight: "20px" }}>{subtitle}</span>
+      </div>
     </div>
   );
 };

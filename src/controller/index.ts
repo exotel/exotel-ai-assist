@@ -13,14 +13,12 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
   private readonly reconnectInterval: number;
   private readonly maxReconnectAttempts: number;
-  private readonly debug: boolean;
 
   constructor(params: ExotelAIAssistParams) {
     super();
     this.params = { ...params };
     this.reconnectInterval = params.reconnectInterval ?? 3000;
     this.maxReconnectAttempts = params.maxReconnectAttempts ?? 5;
-    this.debug = params.debug ?? false;
   }
 
   connect(): void {
@@ -40,22 +38,20 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   setParams(patch: Partial<ExotelAIAssistParams>): void {
     const prev = this.params;
     this.params = { ...prev, ...patch };
+    const hash = Utils.hash(this.params);
+    const prevHash = Utils.hash(prev);
+    const hashChanged = hash !== prevHash;
 
-    if (patch.callSid !== undefined && patch.callSid !== prev.callSid) {
-      this._log("callSid changed — reconnecting");
+    if (hashChanged) {
       this.reconnectAttempt = 0;
       this._clearReconnectTimer();
       // Destroy (not just disconnect) so the next _ensureTransport call creates
       // a new instance scoped to the new session hash.
       this.transport?.destroy();
       this.transport = null;
-      if (this.params.callSid) {
-        this._setStatus("connecting");
-        this._ensureTransport();
-        this.transport!.connect(Utils.buildWsUrl(this.params), this.params.authToken);
-      } else {
-        this._setStatus("idle");
-      }
+      this._setStatus("connecting");
+      this._ensureTransport();
+      this.transport!.connect(Utils.buildWsUrl(this.params), this.params.authToken);
     } else if (this.status === "connected") {
       this.transport?.send(JSON.stringify({ type: "params_update", payload: patch }));
     }
@@ -84,12 +80,12 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       case "CONNECTED":
         this.reconnectAttempt = 0;
         this._setStatus("connected");
-        this.emit("onCallStart", { callSid: this.params.callSid });
+        this.emit("onCallStart");
         break;
 
       case "DISCONNECTED":
         this._setStatus("disconnected");
-        this.emit("onCallEnd", { callSid: this.params.callSid });
+        this.emit("onCallEnd");
         this._scheduleReconnect();
         break;
 
@@ -174,7 +170,6 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     }
 
     const delay = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempt), 30_000);
-    this._log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempt + 1})`);
 
     this.reconnectTimer = setTimeout(() => {
       if (this.destroyed) return;
@@ -198,8 +193,6 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   }
 
   private _log(...args: unknown[]): void {
-    if (this.debug) {
-      console.log("[ExotelAIAssist]", ...args);
-    }
+    console.log("[ExotelAIAssist]", ...args);
   }
 }

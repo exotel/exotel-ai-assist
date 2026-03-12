@@ -3,13 +3,10 @@ export interface ExotelAIAssistParams {
   callSid: string;
   /** Exotel account identifier. */
   accountId: string;
-  /** Source identifier (e.g. agent ID, integration name). */
-  source: string;
   /** WebSocket base URL. Defaults to the Exotel AI Assist backend if omitted. */
   wssBaseUrl?: string;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
-  debug?: boolean;
   [key: string]: unknown;
 }
 
@@ -87,8 +84,8 @@ export interface ControllerEvents {
   sentiment: (data: Sentiment) => void;
   /** Internal: bot feature-flag config. Consumed by the UI component only. */
   botConfig: (config: BotConfig) => void;
-  onCallStart: (data: { callSid: string }) => void;
-  onCallEnd: (data: { callSid: string }) => void;
+  onCallStart: () => void;
+  onCallEnd: () => void;
   statusChange: (status: ConnectionStatus) => void;
   error: (err: Error) => void;
   raw: (data: unknown) => void;

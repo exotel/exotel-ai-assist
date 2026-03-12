@@ -1,22 +1,14 @@
 import React from "react";
-import { createRoot, Root } from "react-dom/client";
+import ReactDOM from "react-dom";
 import { ExotelAIAssist } from "./components/ExotelAIAssistApp";
 import { ExotelAIAssistParams } from "./types";
 
-const roots = new WeakMap<HTMLElement, Root>();
-
 export function mountExotelAIAssist(container: HTMLElement, params: ExotelAIAssistParams): void {
-  let root = roots.get(container);
-  if (!root) {
-    root = createRoot(container);
-    roots.set(container, root);
-  }
-  root.render(React.createElement(ExotelAIAssist, params));
+  ReactDOM.render(React.createElement(ExotelAIAssist, params), container);
 }
 
 export function unmountExotelAIAssist(container: HTMLElement): void {
-  roots.get(container)?.unmount();
-  roots.delete(container);
+  ReactDOM.unmountComponentAtNode(container);
 }
 
 export { ExotelAIAssistController } from "./controller";

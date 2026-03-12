@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from "react";
-import { Flex, Text } from "@radix-ui/themes";
 
 import { TranscriptLine, BotConfig } from "../../types";
 import LoadingBox from "../LoadingBox";
@@ -32,28 +31,36 @@ export function TranscriptTab({ transcripts, connected, botConfig }: { transcrip
 
   return (
     <div ref={scrollRef} style={{ flex: 1, overflow: "auto", minHeight: 0, marginTop: "10px", marginBottom: "10px" }}>
-      <Flex direction="column" gap="3">
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {transcripts.map((line) => (
-          <Flex key={line.id} gap="3" align="start" direction="row" style={{ padding: "10px", borderBottom: "1px solid var(--gray-3)" }}>
+          <div
+            key={line.id}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "flex-start",
+              gap: "12px",
+              padding: "10px",
+              borderBottom: "1px solid #e5e7eb",
+            }}
+          >
             <span
               style={{
                 flexShrink: 0,
                 padding: "3px",
                 borderRadius: "4px",
-                backgroundColor: "var(--gray-3)",
-                color: "black",
+                backgroundColor: "#e5e7eb",
+                color: "#111827",
                 fontSize: "12px",
                 fontWeight: 500,
               }}
             >
               {Utils.formatTimestamp(line.startTime)}
             </span>
-            <Text size="2" style={{ flex: 1, color: "var(--gray-12)", fontSize: "15px" }}>
-              {line.text}
-            </Text>
-          </Flex>
+            <span style={{ flex: 1, color: "#111827", fontSize: "15px" }}>{line.text}</span>
+          </div>
         ))}
-      </Flex>
+      </div>
     </div>
   );
 }
