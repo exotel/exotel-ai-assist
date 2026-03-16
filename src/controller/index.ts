@@ -1,40 +1,7 @@
 import EventEmitter from "eventemitter3";
-import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, SentimentScore, WssEvent, InitialHandshakeResponse, WssResponse } from "../types";
+import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse } from "../types";
 import { ITransport, createTransport } from "../transport";
-
-function genId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-function sentimentScore(label: string): number {
-  const l = label.toLowerCase();
-  if (l === "positive") return 0.8;
-  if (l === "negative") return -0.8;
-  return 0.0;
-}
-
-/** Production AI Assist WebSocket endpoint — used when wssBaseUrl is not supplied. */
-// const DEFAULT_WSS_BASE_URL = "wss://ai-assist.in.exotel.com/ai-assist/one-assistant-event-publisher";
-
-function getWssBaseUrl(accountId: string): string {
-  return `wss://ai-assist.in.exotel.com/ai-assist/accounts/${accountId}/one-assistant-event-publisher`;
-}
-
-function buildWsUrl(params: ExotelAIAssistParams): string {
-  const { authToken, callSid, accountId, source, wssBaseUrl, reconnectInterval, maxReconnectAttempts, debug, ...extra } = params;
-  const resolved = wssBaseUrl ?? getWssBaseUrl(accountId);
-  const base = resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
-  const query = new URLSearchParams({
-    authToken,
-    conversation_id:callSid,
-    source,
-    ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [k, String(v)])),
-  });
-  return `${base}?${query.toString()}`;
-}
+import { Utils } from "../utils";
 
 export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   private params: ExotelAIAssistParams;
@@ -46,26 +13,20 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
   private readonly reconnectInterval: number;
   private readonly maxReconnectAttempts: number;
-  private readonly debug: boolean;
 
   constructor(params: ExotelAIAssistParams) {
     super();
     this.params = { ...params };
     this.reconnectInterval = params.reconnectInterval ?? 3000;
     this.maxReconnectAttempts = params.maxReconnectAttempts ?? 5;
-    this.debug = params.debug ?? false;
   }
-
-  // --------------------------------------------------------------------------
-  // Public API
-  // --------------------------------------------------------------------------
 
   connect(): void {
     if (this.destroyed) return;
     this._clearReconnectTimer();
     this._setStatus("connecting");
     this._ensureTransport();
-    this.transport!.connect(buildWsUrl(this.params));
+    this.transport!.connect(Utils.buildWsUrl(this.params), this.params.authToken);
   }
 
   disconnect(): void {
@@ -74,31 +35,25 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     this._setStatus("disconnected");
   }
 
-  /**
-   * Merges a partial params patch.
-   * - `callSid` change → close and reconnect with new callSid.
-   * - Any other change → send `params_update` over the open socket.
-   */
   setParams(patch: Partial<ExotelAIAssistParams>): void {
     const prev = this.params;
     this.params = { ...prev, ...patch };
+    const hash = Utils.hash(this.params);
+    const prevHash = Utils.hash(prev);
+    const hashChanged = hash !== prevHash;
 
-    if (patch.callSid !== undefined && patch.callSid !== prev.callSid) {
-      this._log("callSid changed — reconnecting");
+    if (hashChanged) {
       this.reconnectAttempt = 0;
       this._clearReconnectTimer();
-      this.transport?.disconnect();
-      if (this.params.callSid) {
-        // Only reconnect if the new callSid is non-empty
-        this._setStatus("connecting");
-        this._ensureTransport();
-        this.transport!.connect(buildWsUrl(this.params));
-      } else {
-        this._setStatus("idle");
-      }
+      // Destroy (not just disconnect) so the next _ensureTransport call creates
+      // a new instance scoped to the new session hash.
+      this.transport?.destroy();
+      this.transport = null;
+      this._setStatus("connecting");
+      this._ensureTransport();
+      this.transport!.connect(Utils.buildWsUrl(this.params), this.params.authToken);
     } else if (this.status === "connected") {
-      const updateMsg = JSON.stringify({ type: "params_update", payload: patch });
-      this.transport?.send(updateMsg);
+      this.transport?.send(JSON.stringify({ type: "params_update", payload: patch }));
     }
   }
 
@@ -114,13 +69,9 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     return this.status;
   }
 
-  // --------------------------------------------------------------------------
-  // Internal helpers
-  // --------------------------------------------------------------------------
-
   private _ensureTransport(): void {
     if (this.transport) return;
-    this.transport = createTransport();
+    this.transport = createTransport(Utils.hash(this.params));
     this.transport.onMessage((msg) => this._handleTransportMessage(msg));
   }
 
@@ -129,12 +80,12 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       case "CONNECTED":
         this.reconnectAttempt = 0;
         this._setStatus("connected");
-        this.emit("onCallStart", { callSid: this.params.callSid });
+        this.emit("onCallStart");
         break;
 
       case "DISCONNECTED":
         this._setStatus("disconnected");
-        this.emit("onCallEnd", { callSid: this.params.callSid });
+        this.emit("onCallEnd");
         this._scheduleReconnect();
         break;
 
@@ -149,16 +100,6 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     }
   }
 
-  /**
-   * Parses the AI Assist backend WSS message and maps it to consumer types.
-   *
-   * Two shapes arrive from the backend (both are internal details):
-   *   1. Initial handshake: { type, config, events: WssEvent[] | WssEvent }
-   *   2. Ongoing events:   { config, events: WssEvent }
-   *
-   * Internally we map these to the public Suggestion / TranscriptLine /
-   * SentimentScore types before emitting — consumers never see the raw shape.
-   */
   private _handleServerPayload(raw: string): void {
     let parsed: InitialHandshakeResponse | WssResponse;
     try {
@@ -183,14 +124,12 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     for (const event of events) {
       if (!event) continue;
 
-      // --- Transcript lines --------------------------------------------------
       if (event.transcript && event.transcript.length > 0) {
         const lines: TranscriptLine[] = event.transcript.map((msg) => {
           const first = msg.transcript_segments?.[0];
           const last = msg.transcript_segments?.[msg.transcript_segments.length - 1];
           return {
             id: String(msg.sequence),
-            speaker: "customer",
             text: msg.transcript_segments.map((s) => s.text).join(" "),
             startTime: first?.start_timestamp ? Date.parse(first.start_timestamp) : now,
             endTime: last?.end_timestamp ? Date.parse(last.end_timestamp) : now,
@@ -200,23 +139,18 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         this.emit("transcript", lines);
       }
 
-      // --- Suggestion --------------------------------------------------------
       if (event.event_type === "suggestion" && event.text) {
         const suggestion: Suggestion = {
-          id: genId(),
+          id: Utils.getUniqueId(),
           text: event.text,
-          confidence: 1.0,
           timestamp: now,
         };
         this.emit("suggestion", suggestion);
       }
 
-      // --- Sentiment ---------------------------------------------------------
       if (event.event_type === "sentiment" && event.text) {
-        const label = event.text.toLowerCase() as SentimentScore["label"];
-        const sentiment: SentimentScore = {
-          label,
-          score: sentimentScore(label),
+        const sentiment: Sentiment = {
+          label: event.text.toLowerCase() as Sentiment["label"],
           timestamp: now,
         };
         this.emit("sentiment", sentiment);
@@ -236,13 +170,12 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     }
 
     const delay = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempt), 30_000);
-    this._log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempt + 1})`);
 
     this.reconnectTimer = setTimeout(() => {
       if (this.destroyed) return;
       this.reconnectAttempt += 1;
       this._setStatus("connecting");
-      this.transport?.connect(buildWsUrl(this.params));
+      this.transport?.connect(Utils.buildWsUrl(this.params), this.params.authToken);
     }, delay);
   }
 
@@ -260,8 +193,6 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   }
 
   private _log(...args: unknown[]): void {
-    if (this.debug) {
-      console.log("[ExotelAIAssist]", ...args);
-    }
+    console.log("[ExotelAIAssist]", ...args);
   }
 }

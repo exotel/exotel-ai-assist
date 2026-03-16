@@ -1,5 +1,3 @@
-@import "@radix-ui/themes/styles.css";
-
 /* -----------------------------------------------------------------------
    Base
    ----------------------------------------------------------------------- */
@@ -23,8 +21,8 @@
     sans-serif;
 }
 
-/* Ensure the Radix Theme wrapper fills its container too */
 .oa-theme-root {
+  position: relative; /* anchors the scoped toast stack */
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -40,18 +38,17 @@
   font-size: 16px;
   line-height: 20px;
   color: #111827;
+  margin: 0;
 }
 
 /* -----------------------------------------------------------------------
-   Tabs
+   Tabs  (@radix-ui/react-tabs primitives)
    ----------------------------------------------------------------------- */
 .oa-tabs {
   width: 100%;
 }
 
-/* Force Radix Tabs.Content to participate in the flex chain so only
-   the content area scrolls — not the whole app */
-.oa-tabs .rt-TabsContent {
+.oa-tabs-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -59,30 +56,38 @@
   overflow: hidden;
 }
 
-.oa-tabs .rt-TabsList {
+.oa-tabs-list {
+  display: flex;
   padding: 0;
   gap: 20px;
   border-bottom: 1px solid #e5e7eb;
 }
 
-.oa-tabs .rt-TabsTrigger {
+.oa-tabs-trigger {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 0;
   background: transparent;
+  border: none;
   color: #6b7280;
   font-weight: 500;
+  font-size: 15px;
   border-radius: 0;
-}
-
-.oa-tabs .rt-TabsTrigger:hover {
   cursor: pointer;
+  outline: none;
 }
 
-.oa-tabs .rt-TabsTrigger[data-state="active"] {
+.oa-tabs-trigger:hover {
+  color: #374151;
+}
+
+.oa-tabs-trigger[data-state="active"] {
   color: #2563eb;
 }
 
-.oa-tabs .rt-TabsTrigger[data-state="active"]::after {
+.oa-tabs-trigger[data-state="active"]::after {
   content: "";
   position: absolute;
   left: 0;
@@ -163,7 +168,10 @@
 /* -----------------------------------------------------------------------
    Copy icon button
    ----------------------------------------------------------------------- */
-.oa-copy-icon.rt-IconButton {
+.oa-copy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
   min-width: 32px;
@@ -173,11 +181,26 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   color: #6b7280;
+  padding: 0;
 }
 
-.oa-copy-icon.rt-IconButton:hover {
+.oa-copy-icon:hover {
   background: #f9fafb;
   color: #374151;
+}
+
+/* -----------------------------------------------------------------------
+   Toast
+   ----------------------------------------------------------------------- */
+@keyframes oa-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* -----------------------------------------------------------------------
