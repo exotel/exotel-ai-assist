@@ -54,9 +54,9 @@ export class Utils {
 
     // Mandatory server params remapped to the names the API expects.
     // accountId is embedded in the URL path — never sent as a query param.
-    const mandatory: [string, string][] = [["access_token", String(params.authToken)]];
+    const pairs: [string, string][] = [];
     if (params.call_sid !== undefined && params.call_sid !== null) {
-      mandatory.push(["call_sid", String(params.call_sid)]);
+      pairs.push(["call_sid", String(params.call_sid)]);
     }
 
     // Extra caller-supplied params, excluding internals and already-mapped keys.
@@ -70,7 +70,7 @@ export class Utils {
     // array as a plain object, turning index 0 into a key and the inner
     // array's toString() (comma-joined) into the value.
     const query = new URLSearchParams();
-    [...mandatory, ...extra].forEach(([k, v]) => query.append(k, v));
+    [...pairs, ...extra].forEach(([k, v]) => query.append(k, v));
     return query.toString();
   }
 
