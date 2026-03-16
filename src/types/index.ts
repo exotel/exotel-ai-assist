@@ -91,4 +91,4 @@ export interface ControllerEvents {
   raw: (data: unknown) => void;
 }
 
-export type WorkerInboundMessage = { type: "MESSAGE"; payload: string } | { type: "CONNECTED" } | { type: "DISCONNECTED" } | { type: "ERROR"; message: string };
+export type WorkerInboundMessage = { type: "MESSAGE"; payload: string } | { type: "CONNECTED" } | { type: "DISCONNECTED"; code?: number } | { type: "ERROR"; message: string };

@@ -1,5 +1,5 @@
 import EventEmitter from "eventemitter3";
-import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse } from "../types";
+import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse, WorkerInboundMessage } from "../types";
 import { ITransport, createTransport } from "../transport";
 import { Utils } from "../utils";
 
@@ -75,7 +75,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     this.transport.onMessage((msg) => this._handleTransportMessage(msg));
   }
 
-  private _handleTransportMessage(msg: { type: string; payload?: string; message?: string }): void {
+  private _handleTransportMessage(msg: WorkerInboundMessage): void {
     switch (msg.type) {
       case "CONNECTED":
         this.reconnectAttempt = 0;
@@ -86,7 +86,11 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       case "DISCONNECTED":
         this._setStatus("disconnected");
         this.emit("onCallEnd");
-        this._scheduleReconnect();
+        // Close codes 4001 (auth_failed) and 4002 (auth_timeout) are permanent
+        // auth failures — reconnecting with the same token would fail again.
+        if (msg.code !== 4001 && msg.code !== 4002) {
+          this._scheduleReconnect();
+        }
         break;
 
       case "ERROR":
@@ -110,6 +114,18 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     }
 
     this.emit("raw", parsed);
+
+    // Auth error messages arrive before the server closes the connection.
+    // Treat both as fatal — the server will follow up with a 4001/4002 close.
+    const msgType = (parsed as { type?: string }).type;
+    if (msgType === "auth_failed" || msgType === "auth_timeout") {
+      const detail = (parsed as { error?: string }).error ?? msgType;
+      const err = new Error(detail) as Error & { code: string };
+      err.code = msgType.toUpperCase();
+      this._setStatus("error");
+      this.emit("error", err);
+      return;
+    }
 
     if (parsed.config) {
       this.emit("botConfig", parsed.config);

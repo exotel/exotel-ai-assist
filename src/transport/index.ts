@@ -93,6 +93,9 @@ export class BroadcastChannelTransport implements ITransport {
 
     this.socket.onopen = () => {
       this.socketConnected = true;
+
+      this.socket!.send(JSON.stringify({ type: "auth", access_token: authToken }));
+
       const msg: WorkerInboundMessage = { type: "CONNECTED" };
       this.handler?.(msg);
       this.channel.postMessage(msg);
@@ -110,9 +113,9 @@ export class BroadcastChannelTransport implements ITransport {
       this.channel.postMessage(msg);
     };
 
-    this.socket.onclose = () => {
+    this.socket.onclose = (ev) => {
       this.socketConnected = false;
-      const msg: WorkerInboundMessage = { type: "DISCONNECTED" };
+      const msg: WorkerInboundMessage = { type: "DISCONNECTED", code: ev.code };
       this.handler?.(msg);
       this.channel.postMessage(msg);
       this.socket = null;
