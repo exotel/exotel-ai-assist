@@ -50,10 +50,20 @@
 
 .oa-tabs-content {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Radix sets data-state="inactive" but our display:flex would override its
+   built-in hiding. Explicitly hide inactive panels and only apply flex layout
+   to the active one so inactive panels don't consume flex space. */
+.oa-tabs-content[data-state="inactive"] {
+  display: none !important;
+}
+
+.oa-tabs-content[data-state="active"] {
+  display: flex;
+  flex-direction: column;
 }
 
 .oa-tabs-list {
