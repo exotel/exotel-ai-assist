@@ -7,23 +7,30 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   private params: ExotelAIAssistParams;
   private transport: ITransport | null = null;
   private status: ConnectionStatus = "idle";
-  private reconnectAttempt = 0;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
 
-  private readonly reconnectInterval: number;
-  private readonly maxReconnectAttempts: number;
+  // True once the WebSocket's onopen fires (CONNECTED received).
+  // Reset to false before every new connection attempt.
+  // This is the gate for the retry decision:
+  //   connectionEstablished === false  → connection never opened → retry
+  //   connectionEstablished === true   → server ended a live connection → destroy
+  private connectionEstablished = false;
+  private reconnectAttempt = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private static readonly MAX_RECONNECT_ATTEMPTS = 5;
+  private static readonly RECONNECT_BASE_MS = 3_000;
 
   constructor(params: ExotelAIAssistParams) {
     super();
     this.params = { ...params };
-    this.reconnectInterval = params.reconnectInterval ?? 3000;
-    this.maxReconnectAttempts = params.maxReconnectAttempts ?? 5;
   }
 
   connect(): void {
     if (this.destroyed) return;
     this._clearReconnectTimer();
+    this.connectionEstablished = false;
+    this.reconnectAttempt = 0;
     this._setStatus("connecting");
     this._ensureTransport();
     this.transport!.connect(Utils.buildWsUrl(this.params), this.params.authToken);
@@ -38,15 +45,13 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   setParams(patch: Partial<ExotelAIAssistParams>): void {
     const prev = this.params;
     this.params = { ...prev, ...patch };
-    const hash = Utils.hash(this.params);
-    const prevHash = Utils.hash(prev);
-    const hashChanged = hash !== prevHash;
+    const hashChanged = Utils.hash(this.params) !== Utils.hash(prev);
 
     if (hashChanged) {
-      this.reconnectAttempt = 0;
       this._clearReconnectTimer();
-      // Destroy (not just disconnect) so the next _ensureTransport call creates
-      // a new instance scoped to the new session hash.
+      this.connectionEstablished = false;
+      this.reconnectAttempt = 0;
+      // Tear down the current transport and start fresh with the new params.
       this.transport?.destroy();
       this.transport = null;
       this._setStatus("connecting");
@@ -58,6 +63,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
     this.destroyed = true;
     this._clearReconnectTimer();
     this.transport?.destroy();
@@ -78,29 +84,65 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   private _handleTransportMessage(msg: WorkerInboundMessage): void {
     switch (msg.type) {
       case "CONNECTED":
+        this.connectionEstablished = true;
         this.reconnectAttempt = 0;
         this._setStatus("connected");
         this.emit("onCallStart");
         break;
 
       case "DISCONNECTED":
-        this._setStatus("disconnected");
-        this.emit("onCallEnd");
-        // Close codes 4001 (auth_failed) and 4002 (auth_timeout) are permanent
-        // auth failures — reconnecting with the same token would fail again.
-        if (msg.code !== 4001 && msg.code !== 4002) {
+        if (this.connectionEstablished) {
+          // Server ended an already-established connection (call ended, stream
+          // not found, auth failure, etc.) — do not retry.
+          this._setStatus("disconnected");
+          this.emit("onCallEnd");
+          this.destroy();
+        } else {
+          // WebSocket never opened — network/DNS/refused error.
+          // Retry up to MAX_RECONNECT_ATTEMPTS then give up.
           this._scheduleReconnect();
         }
         break;
 
       case "ERROR":
-        this._setStatus("error");
+        // onerror fires before onclose; DISCONNECTED will arrive right after
+        // and drive the retry / destroy decision. Just surface the error here.
         this.emit("error", new Error(msg.message ?? "Unknown transport error"));
         break;
 
       case "MESSAGE":
         if (msg.payload) this._handleServerPayload(msg.payload);
         break;
+    }
+  }
+
+  private _scheduleReconnect(): void {
+    if (this.destroyed) return;
+
+    if (this.reconnectAttempt >= ExotelAIAssistController.MAX_RECONNECT_ATTEMPTS) {
+      const err = new Error("Connection failed after maximum retries") as Error & { code: string };
+      err.code = "MAX_RECONNECT_EXCEEDED";
+      this._setStatus("error");
+      this.emit("error", err);
+      this.destroy();
+      return;
+    }
+
+    const delay = Math.min(ExotelAIAssistController.RECONNECT_BASE_MS * Math.pow(2, this.reconnectAttempt), 30_000);
+    this.reconnectAttempt += 1;
+
+    this._setStatus("connecting");
+    this.reconnectTimer = setTimeout(() => {
+      if (this.destroyed) return;
+      this.connectionEstablished = false;
+      this.transport?.connect(Utils.buildWsUrl(this.params), this.params.authToken);
+    }, delay);
+  }
+
+  private _clearReconnectTimer(): void {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
   }
 
@@ -174,41 +216,9 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     }
   }
 
-  private _scheduleReconnect(): void {
-    if (this.destroyed) return;
-    if (this.status === "error") return;
-
-    if (this.reconnectAttempt >= this.maxReconnectAttempts) {
-      const err = new Error("MAX_RECONNECT_EXCEEDED");
-      (err as Error & { code: string }).code = "MAX_RECONNECT_EXCEEDED";
-      this.emit("error", err);
-      return;
-    }
-
-    const delay = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempt), 30_000);
-
-    this.reconnectTimer = setTimeout(() => {
-      if (this.destroyed) return;
-      this.reconnectAttempt += 1;
-      this._setStatus("connecting");
-      this.transport?.connect(Utils.buildWsUrl(this.params), this.params.authToken);
-    }, delay);
-  }
-
-  private _clearReconnectTimer(): void {
-    if (this.reconnectTimer !== null) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-  }
-
   private _setStatus(status: ConnectionStatus): void {
     if (this.status === status) return;
     this.status = status;
     this.emit("statusChange", status);
-  }
-
-  private _log(...args: unknown[]): void {
-    console.log("[ExotelAIAssist]", ...args);
   }
 }
