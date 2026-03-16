@@ -42,6 +42,7 @@ export function TranscriptTab({ transcripts, connected, botConfig }: { transcrip
               gap: "12px",
               padding: "10px",
               borderBottom: "1px solid #e5e7eb",
+              textAlign: "left",
             }}
           >
             <span
