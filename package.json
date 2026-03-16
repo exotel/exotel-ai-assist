@@ -1,6 +1,6 @@
 {
   "name": "@exotel-npm-dev/exotel-ai-assist",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "AI-powered real-time suggestions, transcript, and sentiment for agent calls",
   "license": "Apache-2.0",
   "main": "dist/index.js",
