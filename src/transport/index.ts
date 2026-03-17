@@ -40,6 +40,8 @@ export class BroadcastChannelTransport implements ITransport {
       const data = ev.data;
 
       if (this.isLeader) {
+        // A new follower tab has opened. If our socket is already connected,
+        // broadcast CONNECTED so the follower can sync its status immediately.
         if (data.type === "JOIN" && this.socketConnected) {
           this.channel.postMessage({ type: "CONNECTED" } satisfies WorkerInboundMessage);
         }
@@ -53,6 +55,10 @@ export class BroadcastChannelTransport implements ITransport {
     };
 
     this._electLeader(lockName);
+
+    // Announce presence so the current leader can send us the current state.
+    // BroadcastChannel never delivers to the sender itself, so this is safe
+    // regardless of whether this tab ends up being the leader.
     this.channel.postMessage({ type: "JOIN" } satisfies InternalMessage);
   }
 
@@ -61,8 +67,13 @@ export class BroadcastChannelTransport implements ITransport {
       .request(lockName, { ifAvailable: false }, (lock) => {
         if (lock) {
           this.isLeader = true;
+          // Hold the lock for the lifetime of this transport instance.
           return new Promise<void>((resolve) => {
             this.lockReleaser = resolve;
+            // The lock can arrive asynchronously AFTER destroy() was called
+            // (e.g. React StrictMode runs effect cleanup before the microtask
+            // queue drains). Release the lock immediately so the next transport
+            // in line can acquire it, and skip opening any socket.
             if (this._destroyed) {
               resolve();
               return;
@@ -89,8 +100,8 @@ export class BroadcastChannelTransport implements ITransport {
     this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
+      if (this._destroyed) return;
       this.socketConnected = true;
-
       this.socket!.send(JSON.stringify({ type: "auth", access_token: authToken }));
       const msg: WorkerInboundMessage = { type: "CONNECTED" };
       this.channel.postMessage(msg);
@@ -115,7 +126,6 @@ export class BroadcastChannelTransport implements ITransport {
       if (this._destroyed) return;
       this.socketConnected = false;
       const msg: WorkerInboundMessage = { type: "DISCONNECTED", code: ev.code };
-      this.handler?.(msg);
       this.channel.postMessage(msg);
       this.handler?.(msg);
       this.socket = null;

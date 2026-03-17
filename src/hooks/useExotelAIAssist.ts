@@ -36,7 +36,8 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const paramHash = useMemo(() => Utils.hash(params), [params]);
 
   useEffect(() => {
-    // Clear stale data from the previous session before connecting.
+    // Clear all stale state from the previous session before connecting.
+    setStatus("idle");
     setSuggestions([]);
     setTranscripts([]);
     setSentiment(null);
