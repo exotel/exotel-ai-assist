@@ -23,6 +23,7 @@ export class BroadcastChannelTransport implements ITransport {
   private pendingUrl: string | null = null;
   private pendingAuthToken: string | null = null;
   private lockReleaser: (() => void) | null = null;
+  private _destroyed = false;
 
   /**
    * @param sessionHash - A hash of all connection-relevant params (see
@@ -39,8 +40,6 @@ export class BroadcastChannelTransport implements ITransport {
       const data = ev.data;
 
       if (this.isLeader) {
-        // A new follower tab has opened. If our socket is already connected,
-        // broadcast CONNECTED so the follower can sync its status immediately.
         if (data.type === "JOIN" && this.socketConnected) {
           this.channel.postMessage({ type: "CONNECTED" } satisfies WorkerInboundMessage);
         }
@@ -54,10 +53,6 @@ export class BroadcastChannelTransport implements ITransport {
     };
 
     this._electLeader(lockName);
-
-    // Announce presence so the current leader can send us the current state.
-    // BroadcastChannel never delivers to the sender itself, so this is safe
-    // regardless of whether this tab ends up being the leader.
     this.channel.postMessage({ type: "JOIN" } satisfies InternalMessage);
   }
 
@@ -66,21 +61,23 @@ export class BroadcastChannelTransport implements ITransport {
       .request(lockName, { ifAvailable: false }, (lock) => {
         if (lock) {
           this.isLeader = true;
-          if (this.pendingUrl && this.pendingAuthToken) {
-            this._openSocket(this.pendingUrl, this.pendingAuthToken);
-            this.pendingUrl = null;
-            this.pendingAuthToken = null;
-          }
-          // Hold the lock for the lifetime of this transport instance.
           return new Promise<void>((resolve) => {
             this.lockReleaser = resolve;
+            if (this._destroyed) {
+              resolve();
+              return;
+            }
+            if (this.pendingUrl && this.pendingAuthToken) {
+              this._openSocket(this.pendingUrl, this.pendingAuthToken);
+              this.pendingUrl = null;
+              this.pendingAuthToken = null;
+            }
           });
         }
         return Promise.resolve();
       })
       .catch(() => {
-        // Navigator Locks not supported — every tab owns its own WebSocket.
-        this.isLeader = true;
+        if (!this._destroyed) this.isLeader = true;
       });
   }
 
@@ -95,29 +92,32 @@ export class BroadcastChannelTransport implements ITransport {
       this.socketConnected = true;
 
       this.socket!.send(JSON.stringify({ type: "auth", access_token: authToken }));
-
       const msg: WorkerInboundMessage = { type: "CONNECTED" };
-      this.handler?.(msg);
       this.channel.postMessage(msg);
+      this.handler?.(msg);
     };
 
     this.socket.onmessage = (ev) => {
+      if (this._destroyed) return;
       const msg: WorkerInboundMessage = { type: "MESSAGE", payload: ev.data as string };
-      this.handler?.(msg);
       this.channel.postMessage(msg);
+      this.handler?.(msg);
     };
 
     this.socket.onerror = () => {
+      if (this._destroyed) return;
       const msg: WorkerInboundMessage = { type: "ERROR", message: "WebSocket error" };
-      this.handler?.(msg);
       this.channel.postMessage(msg);
+      this.handler?.(msg);
     };
 
     this.socket.onclose = (ev) => {
+      if (this._destroyed) return;
       this.socketConnected = false;
       const msg: WorkerInboundMessage = { type: "DISCONNECTED", code: ev.code };
       this.handler?.(msg);
       this.channel.postMessage(msg);
+      this.handler?.(msg);
       this.socket = null;
     };
   }
@@ -149,6 +149,7 @@ export class BroadcastChannelTransport implements ITransport {
   }
 
   destroy(): void {
+    this._destroyed = true;
     this.disconnect();
     this.channel.close();
     this.lockReleaser?.();

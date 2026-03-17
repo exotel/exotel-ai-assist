@@ -26,7 +26,6 @@ export interface UseExotelAIAssistInternalReturn extends UseExotelAIAssistReturn
 
 export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssistInternalReturn {
   const controllerRef = useRef<ExotelAIAssistController | null>(null);
-  const paramsRef = useRef<ExotelAIAssistParams>(params);
 
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -37,11 +36,14 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const paramHash = useMemo(() => Utils.hash(params), [params]);
 
   useEffect(() => {
-    paramsRef.current = params;
-  });
+    // Clear stale data from the previous session before connecting.
+    setSuggestions([]);
+    setTranscripts([]);
+    setSentiment(null);
+    setBotConfig(null);
+    setLastError(null);
 
-  useEffect(() => {
-    const ctrl = new ExotelAIAssistController(paramsRef.current);
+    const ctrl = new ExotelAIAssistController(params);
     controllerRef.current = ctrl;
 
     ctrl.on("statusChange", setStatus);
@@ -63,25 +65,6 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
       ctrl.destroy();
       controllerRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const prevParamHashRef = useRef(paramHash);
-  useEffect(() => {
-    if (!controllerRef.current) return;
-    const prevParamHash = prevParamHashRef.current;
-    const paramHashChanged = paramHash !== prevParamHash;
-
-    if (paramHashChanged) {
-      prevParamHashRef.current = paramHash;
-      setSuggestions([]);
-      setTranscripts([]);
-      setSentiment(null);
-      setBotConfig(null);
-      setLastError(null);
-    }
-
-    controllerRef.current.setParams(params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramHash]);
 
