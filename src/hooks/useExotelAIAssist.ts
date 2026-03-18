@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { ExotelAIAssistController } from "../controller";
 import { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, BotConfig, ConnectionStatus } from "../types";
 import { Utils } from "../utils";
@@ -33,7 +33,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const [sentiment, setSentiment] = useState<Sentiment | null>(null);
   const [botConfig, setBotConfig] = useState<BotConfig | null>(null);
   const [lastError, setLastError] = useState<Error | null>(null);
-  const paramHash = useMemo(() => Utils.hash(params), [params]);
+  const paramHash = Utils.hash(params)
 
   useEffect(() => {
     // Clear all stale state from the previous session before connecting.
