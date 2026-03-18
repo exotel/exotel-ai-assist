@@ -188,7 +188,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
           const last = msg.transcript_segments?.[msg.transcript_segments.length - 1];
           return {
             id: String(msg.sequence),
-            text: msg.transcript_segments.map((s) => s.text).join(" "),
+            text: msg.transcript_segments?.[0]?.text ?? "",
             startTime: first?.start_timestamp ? Date.parse(first.start_timestamp) : now,
             endTime: last?.end_timestamp ? Date.parse(last.end_timestamp) : now,
             isFinal: msg.transcript_segments.every((s) => s.is_final),
