@@ -11,6 +11,9 @@ export interface ITransport {
   disconnect(): void;
   send(payload: string): void;
   onMessage(handler: TransportMessageHandler): void;
+  /** Signal that the server ack has been received. The leader stores this so
+   *  follower tabs joining later get an immediate ACKNOWLEDGED broadcast. */
+  markAcknowledged(): void;
   destroy(): void;
 }
 
@@ -23,6 +26,7 @@ export class BroadcastChannelTransport implements ITransport {
   private pendingUrl: string | null = null;
   private pendingAuthToken: string | null = null;
   private lockReleaser: (() => void) | null = null;
+  private ackReceived = false;
   private _destroyed = false;
 
   /**
@@ -40,10 +44,11 @@ export class BroadcastChannelTransport implements ITransport {
       const data = ev.data;
 
       if (this.isLeader) {
-        // A new follower tab has opened. If our socket is already connected,
-        // broadcast CONNECTED so the follower can sync its status immediately.
         if (data.type === "JOIN" && this.socketConnected) {
           this.channel.postMessage({ type: "CONNECTED" } satisfies WorkerInboundMessage);
+          if (this.ackReceived) {
+            this.channel.postMessage({ type: "ACKNOWLEDGED" } satisfies WorkerInboundMessage);
+          }
         }
         return;
       }
@@ -102,6 +107,7 @@ export class BroadcastChannelTransport implements ITransport {
     this.socket.onopen = () => {
       if (this._destroyed) return;
       this.socketConnected = true;
+      this.ackReceived = false;
       this.socket!.send(JSON.stringify({ type: "auth", access_token: authToken }));
       const msg: WorkerInboundMessage = { type: "CONNECTED" };
       this.channel.postMessage(msg);
@@ -125,6 +131,7 @@ export class BroadcastChannelTransport implements ITransport {
     this.socket.onclose = (ev) => {
       if (this._destroyed) return;
       this.socketConnected = false;
+      this.ackReceived = false;
       const msg: WorkerInboundMessage = { type: "DISCONNECTED", code: ev.code };
       this.channel.postMessage(msg);
       this.handler?.(msg);
@@ -156,6 +163,10 @@ export class BroadcastChannelTransport implements ITransport {
 
   onMessage(handler: TransportMessageHandler): void {
     this.handler = handler;
+  }
+
+  markAcknowledged(): void {
+    this.ackReceived = true;
   }
 
   destroy(): void {

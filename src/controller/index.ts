@@ -15,6 +15,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   //   connectionEstablished === false  → connection never opened → retry
   //   connectionEstablished === true   → server ended a live connection → destroy
   private connectionEstablished = false;
+  private readyFired = false;
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -30,6 +31,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     if (this.destroyed) return;
     this._clearReconnectTimer();
     this.connectionEstablished = false;
+    this.readyFired = false;
     this.reconnectAttempt = 0;
     this._setStatus("connecting");
     this._ensureTransport();
@@ -39,6 +41,10 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   disconnect(): void {
     this._clearReconnectTimer();
     this.transport?.disconnect();
+    if (this.readyFired) {
+      this.readyFired = false;
+      this.emit("onReady", false);
+    }
     this._setStatus("disconnected");
   }
 
@@ -50,6 +56,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     if (hashChanged) {
       this._clearReconnectTimer();
       this.connectionEstablished = false;
+      this.readyFired = false;
       this.reconnectAttempt = 0;
       // Tear down the current transport and start fresh with the new params.
       this.transport?.destroy();
@@ -90,23 +97,25 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         this.emit("onCallStart");
         break;
 
+      case "ACKNOWLEDGED":
+        this._fireReady();
+        break;
+
       case "DISCONNECTED":
         if (this.connectionEstablished) {
-          // Server ended an already-established connection (call ended, stream
-          // not found, auth failure, etc.) — do not retry.
+          if (this.readyFired) {
+            this.readyFired = false;
+            this.emit("onReady", false);
+          }
           this._setStatus("disconnected");
           this.emit("onCallEnd");
           this.destroy();
         } else {
-          // WebSocket never opened — network/DNS/refused error.
-          // Retry up to MAX_RECONNECT_ATTEMPTS then give up.
           this._scheduleReconnect();
         }
         break;
 
       case "ERROR":
-        // onerror fires before onclose; DISCONNECTED will arrive right after
-        // and drive the retry / destroy decision. Just surface the error here.
         this.emit("error", new Error(msg.message ?? "Unknown transport error"));
         break;
 
@@ -146,6 +155,12 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     }
   }
 
+  private _fireReady(): void {
+    if (this.readyFired) return;
+    this.readyFired = true;
+    this.emit("onReady", true);
+  }
+
   private _handleServerPayload(raw: string): void {
     let parsed: InitialHandshakeResponse | WssResponse;
     try {
@@ -157,8 +172,6 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
     this.emit("raw", parsed);
 
-    // Auth error messages arrive before the server closes the connection.
-    // Treat both as fatal — the server will follow up with a 4001/4002 close.
     const msgType = (parsed as { type?: string }).type;
     if (msgType === "auth_failed" || msgType === "auth_timeout") {
       const detail = (parsed as { error?: string }).error ?? msgType;
@@ -167,6 +180,11 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       this._setStatus("error");
       this.emit("error", err);
       return;
+    }
+
+    if (msgType === "ack" && !this.readyFired) {
+      this.transport?.markAcknowledged();
+      this._fireReady();
     }
 
     if (parsed.config) {

@@ -113,11 +113,13 @@ function AgentDashboard() {
 import { useExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist/react";
 
 function MyCustomUI({ call_sid }: { call_sid: string }) {
-  const { status, suggestions, transcripts, lastError } = useExotelAIAssist({
+  const { isReady, status, suggestions, transcripts, lastError } = useExotelAIAssist({
     authToken: "your-auth-token",
     call_sid,
     accountId: "your-account-id",
   });
+
+  if (!isReady) return <p>Connecting…</p>;
 
   return (
     <div>
@@ -169,6 +171,15 @@ const ctrl = new ExotelAIAssistController({
   authToken: "your-auth-token",
   call_sid: "CALL-SID-001",
   accountId: "your-account-id",
+});
+
+ctrl.on("onReady", (ready) => {
+  if (ready) {
+    console.log("Connection established and acknowledged by server");
+    // Safe to start consuming data / show the UI
+  } else {
+    console.log("Connection lost");
+  }
 });
 
 ctrl.on("suggestion", (s) => console.log("Suggestion:", s));
@@ -232,16 +243,33 @@ Extends `EventEmitter`.
 
 #### Events
 
-| Event          | Payload            | Description                            |
-| -------------- | ------------------ | -------------------------------------- |
-| `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)  |
-| `transcript`   | `TranscriptLine[]` | Live transcript update                 |
-| `sentiment`    | `Sentiment`        | Sentiment label update                 |
-| `onCallStart`  | `unknown`          | Connection opened                      |
-| `onCallEnd`    | `unknown`          | Connection closed                      |
-| `statusChange` | `ConnectionStatus` | Status transition                      |
-| `error`        | `Error`            | Any error (auth, parse, max-reconnect) |
-| `raw`          | `unknown`          | Every raw server message               |
+| Event          | Payload            | Description                                                                                                     |
+| -------------- | ------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `onReady`      | `boolean`          | `true` when connected and server sends `ack`; `false` on disconnect. Multi-tab safe — works for follower tabs too |
+| `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)                                                                           |
+| `transcript`   | `TranscriptLine[]` | Live transcript update                                                                                          |
+| `sentiment`    | `Sentiment`        | Sentiment label update                                                                                          |
+| `onCallStart`  | —                  | Connection opened                                                                                               |
+| `onCallEnd`    | —                  | Connection closed                                                                                               |
+| `statusChange` | `ConnectionStatus` | Status transition                                                                                               |
+| `error`        | `Error`            | Any error (auth, parse, max-reconnect)                                                                          |
+| `raw`          | `unknown`          | Every raw server message                                                                                        |
+
+---
+
+### `useExotelAIAssist(params)` — Hook return values
+
+| Field         | Type               | Description                                                            |
+| ------------- | ------------------ | ---------------------------------------------------------------------- |
+| `isReady`     | `boolean`          | `true` after connected + server ack. Multi-tab safe. `false` on disconnect |
+| `status`      | `ConnectionStatus` | Current connection status                                              |
+| `suggestions` | `Suggestion[]`     | AI suggestions, oldest first, capped at 50                             |
+| `transcripts` | `TranscriptLine[]` | Live transcript lines, ordered by start time                           |
+| `sentiment`   | `Sentiment \| null`| Latest sentiment reading                                               |
+| `lastError`   | `Error \| null`    | Most recent error                                                      |
+| `connect()`   | `() => void`       | Manually open the connection                                           |
+| `disconnect()` | `() => void`      | Manually close the connection                                          |
+| `setParams()` | `(patch) => void`  | Merge params; reconnects if connection params change                   |
 
 ---
 

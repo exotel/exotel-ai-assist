@@ -7,6 +7,13 @@ const MAX_SUGGESTIONS = 50;
 
 export interface UseExotelAIAssistReturn {
   status: ConnectionStatus;
+  /**
+   * `true` once the WebSocket connection is established and the server has
+   * acknowledged it.  In multi-tab scenarios where this tab joins an
+   * already-acknowledged session, it becomes `true` immediately.
+   * Resets to `false` on disconnect.
+   */
+  isReady: boolean;
   /** AI suggestions, oldest first, capped at 50. */
   suggestions: Suggestion[];
   /** Live transcript lines, ordered by start time. */
@@ -28,6 +35,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const controllerRef = useRef<ExotelAIAssistController | null>(null);
 
   const [status, setStatus] = useState<ConnectionStatus>("idle");
+  const [isReady, setIsReady] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [transcripts, setTranscripts] = useState<TranscriptLine[]>([]);
   const [sentiment, setSentiment] = useState<Sentiment | null>(null);
@@ -36,8 +44,8 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const paramHash = Utils.hash(params)
 
   useEffect(() => {
-    // Clear all stale state from the previous session before connecting.
     setStatus("idle");
+    setIsReady(false);
     setSuggestions([]);
     setTranscripts([]);
     setSentiment(null);
@@ -48,6 +56,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     controllerRef.current = ctrl;
 
     ctrl.on("statusChange", setStatus);
+    ctrl.on("onReady", setIsReady);
     ctrl.on("botConfig", setBotConfig);
     ctrl.on("suggestion", (s) => setSuggestions((prev) => [...prev, s].slice(-MAX_SUGGESTIONS)));
     ctrl.on("sentiment", setSentiment);
@@ -73,5 +82,5 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const disconnect = useCallback(() => controllerRef.current?.disconnect(), []);
   const setParams = useCallback((patch: Partial<ExotelAIAssistParams>) => controllerRef.current?.setParams(patch), []);
 
-  return { status, suggestions, transcripts, sentiment, botConfig, lastError, connect, disconnect, setParams };
+  return { status, isReady, suggestions, transcripts, sentiment, botConfig, lastError, connect, disconnect, setParams };
 }
