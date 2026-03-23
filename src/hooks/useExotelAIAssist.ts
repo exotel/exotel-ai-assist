@@ -34,8 +34,6 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const [botConfig, setBotConfig] = useState<BotConfig | null>(null);
   const [lastError, setLastError] = useState<Error | null>(null);
   const paramHash = Utils.hash(params)
-  console.log("params", params);
-  console.log("paramHash", paramHash);
 
   useEffect(() => {
     // Clear all stale state from the previous session before connecting.
