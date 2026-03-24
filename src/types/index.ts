@@ -84,6 +84,14 @@ export interface ControllerEvents {
   sentiment: (data: Sentiment) => void;
   /** Internal: bot feature-flag config. Consumed by the UI component only. */
   botConfig: (config: BotConfig) => void;
+  /**
+   * Fires with `true` once the WebSocket connection is established AND the
+   * server has acknowledged it (first successful server message after auth).
+   * In multi-tab scenarios where a follower tab joins an already-acknowledged
+   * connection, this fires immediately with `true`.
+   * Fires with `false` on disconnect.
+   */
+  onReady: (ready: boolean) => void;
   onCallStart: () => void;
   onCallEnd: () => void;
   statusChange: (status: ConnectionStatus) => void;
@@ -91,4 +99,4 @@ export interface ControllerEvents {
   raw: (data: unknown) => void;
 }
 
-export type WorkerInboundMessage = { type: "MESSAGE"; payload: string } | { type: "CONNECTED" } | { type: "DISCONNECTED"; code?: number } | { type: "ERROR"; message: string };
+export type WorkerInboundMessage = { type: "MESSAGE"; payload: string } | { type: "CONNECTED" } | { type: "ACKNOWLEDGED" } | { type: "DISCONNECTED"; code?: number } | { type: "ERROR"; message: string };

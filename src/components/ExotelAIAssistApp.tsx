@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Lightbulb, FileText } from "lucide-react";
@@ -13,10 +13,19 @@ import { TranscriptTab } from "./key-components/TranscriptTab";
 
 export interface ExotelAIAssistProps extends ExotelAIAssistParams {
   className?: string;
+  /** Called with `true` when the server acknowledges the connection, `false` on disconnect. */
+  onReady?: (ready: boolean) => void;
 }
 
-export function ExotelAIAssist({ className, ...params }: ExotelAIAssistProps): JSX.Element {
-  const { status, suggestions, transcripts, sentiment, botConfig } = useExotelAIAssist(params as ExotelAIAssistParams);
+export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssistProps): JSX.Element {
+  const { status, isReady, suggestions, transcripts, sentiment, botConfig } = useExotelAIAssist(params as ExotelAIAssistParams);
+
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+
+  useEffect(() => {
+    onReadyRef.current?.(isReady);
+  }, [isReady]);
 
   const connected = status === "connected";
 
