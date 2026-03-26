@@ -29,9 +29,7 @@ export class Utils {
    * @returns The base WebSocket URL.
    */
   static getWssBaseUrl(accountId: string): string {
-    // return `wss://ai-assist.in.exotel.com/ai-assist/accounts/${accountId}/one-assistant-event-publisher`;
-    // return `wss://oneassist-uat.in.exotel.com/ai-assist/one-assistant-event-publisher/${accountId}`;
-    return `wss://oneassist-uat.in.exotel.com/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
+    return `wss://ai-assist.in.exotel.com/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
   }
 
   /**
