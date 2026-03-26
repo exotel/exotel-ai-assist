@@ -278,12 +278,6 @@ Extends `EventEmitter`.
 ### TypeScript Types
 
 ```ts
-enum Environment {
-  PRODUCTION = "production",
-  UAT = "uat",
-  DEVELOPMENT = "development",
-}
-
 type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "error";
 
 interface Suggestion {
