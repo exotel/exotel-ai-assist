@@ -6,7 +6,7 @@ export enum Environment {
 
 export const WssBaseUrl: Record<Environment, string> = {
   [Environment.PRODUCTION]: "wss://ai-assist.in.exotel.com",
-  [Environment.UAT]: "wss://oneassist-uat.in.exotel.com",
+  [Environment.UAT]: "wss://aiassist-uat.in.exotel.com",
   [Environment.DEVELOPMENT]: "ws://localhost:8081",
 }
 
