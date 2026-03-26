@@ -1,15 +1,3 @@
-export enum Environment {
-  PRODUCTION = "production",
-  UAT = "uat",
-  DEVELOPMENT = "development",
-}
-
-export const WssBaseUrl: Record<Environment, string> = {
-  [Environment.PRODUCTION]: "wss://ai-assist.in.exotel.com",
-  [Environment.UAT]: "wss://aiassist-uat.in.exotel.com",
-  [Environment.DEVELOPMENT]: "ws://localhost:8081",
-}
-
 export interface ExotelAIAssistParams {
   authToken: string;
   call_sid: string;
@@ -19,7 +7,6 @@ export interface ExotelAIAssistParams {
   wssBaseUrl?: string;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
-  env?: Environment;
   [key: string]: unknown;
 }
 
