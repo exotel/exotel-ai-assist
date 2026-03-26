@@ -182,7 +182,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       return;
     }
 
-    if (msgType === "ack") {
+    if (msgType === "ack" && !this.readyFired) {
       this.transport?.markAcknowledged();
       this._fireReady();
     }
