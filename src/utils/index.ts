@@ -1,5 +1,5 @@
 import objectHash from "object-hash";
-import { ExotelAIAssistParams } from "../types";
+import { Environment, ExotelAIAssistParams, WssBaseUrl } from "../types";
 
 export class Utils {
   static MAX_EXTRA_QUERY_PARAMS = 3;
@@ -28,10 +28,8 @@ export class Utils {
    * @param accountId - The account ID to get the base WebSocket URL for.
    * @returns The base WebSocket URL.
    */
-  static getWssBaseUrl(accountId: string): string {
-    // return `wss://ai-assist.in.exotel.com/ai-assist/accounts/${accountId}/one-assistant-event-publisher`;
-    // return `wss://oneassist-uat.in.exotel.com/ai-assist/one-assistant-event-publisher/${accountId}`;
-    return `wss://oneassist-uat.in.exotel.com/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
+  static getWssBaseUrl(accountId: string, env: Environment): string {
+    return `${WssBaseUrl[env]}/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
   }
 
   /**
@@ -42,7 +40,7 @@ export class Utils {
   static buildWsUrl(params: ExotelAIAssistParams): string {
     const { wssBaseUrl } = params;
 
-    const resolved = wssBaseUrl ?? Utils.getWssBaseUrl(params.accountId);
+    const resolved = wssBaseUrl ?? Utils.getWssBaseUrl(params.accountId, params?.env ?? Environment.PRODUCTION);
     const base = resolved.endsWith("/") ? resolved.slice(0, -1) : resolved;
     const query = Utils.constructQueryParams(params);
     return `${base}?${query}`;
@@ -50,7 +48,7 @@ export class Utils {
 
   static constructQueryParams(params: ExotelAIAssistParams): string {
     // Keys consumed by the library — never forwarded to the server.
-    const INTERNAL_KEYS = new Set(["authToken", "accountId", "wssBaseUrl", "reconnectInterval", "maxReconnectAttempts"]);
+    const INTERNAL_KEYS = new Set(["authToken", "accountId", "wssBaseUrl", "reconnectInterval", "maxReconnectAttempts", "env"]);
 
     // Mandatory server params remapped to the names the API expects.
     // accountId is embedded in the URL path — never sent as a query param.

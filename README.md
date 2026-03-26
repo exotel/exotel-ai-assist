@@ -171,6 +171,7 @@ const ctrl = new ExotelAIAssistController({
   authToken: "your-auth-token",
   call_sid: "CALL-SID-001",
   accountId: "your-account-id",
+  env: "production", // defaults to PRODUCTION if omitted
 });
 
 ctrl.on("onReady", (ready) => {
@@ -221,15 +222,16 @@ Extends `EventEmitter`.
 
 #### Constructor options (`ExotelAIAssistParams`)
 
-| Field                  | Type     | Required | Default                  | Description                                              |
-| ---------------------- | -------- | -------- | ------------------------ | -------------------------------------------------------- |
-| `authToken`            | `string` | ✓        | —                        | Bearer token                                             |
-| `call_sid`             | `string` | ✓        | —                        | Active call SID                                          |
-| `accountId`            | `string` | ✓        | —                        | Exotel account identifier                                |
-| `wssBaseUrl`           | `string` | —        | Exotel AI Assist backend | Override only when pointing at a non-production endpoint |
-| `reconnectInterval`    | `number` | —        | `3000`                   | Base reconnect delay in ms                               |
-| `maxReconnectAttempts` | `number` | —        | `5`                      | Max retries before error                                 |
-| `[customParam]`        | `string` | —        | —                        | Max 3 params you can send                                |
+| Field                  | Type          | Required | Default                    | Description                                                        |
+| ---------------------- | ------------- | -------- | -------------------------- | ------------------------------------------------------------------ |
+| `authToken`            | `string`      | ✓        | —                          | Bearer token                                                       |
+| `call_sid`             | `string`      | ✓        | —                          | Active call SID                                                    |
+| `accountId`            | `string`      | ✓        | —                          | Exotel account identifier                                          |
+| `env`                  | `"production" or "uat" or "development"` |  —      | `production`   | Target environment (`production`, `uat`, or `development`)         |
+| `wssBaseUrl`           | `string`      | —        | Derived from `env`         | Full override for the WebSocket URL (takes precedence over `env`)  |
+| `reconnectInterval`    | `number`      | —        | `3000`                     | Base reconnect delay in ms                                         |
+| `maxReconnectAttempts` | `number`      | —        | `5`                        | Max retries before error                                           |
+| `[customParam]`        | `string`      | —        | —                          | Extra query params forwarded to the server (max 3)                 |
 
 #### Methods
 
