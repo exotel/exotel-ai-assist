@@ -29,15 +29,7 @@ export class Utils {
    * @returns The base WebSocket URL.
    */
   static getWssBaseUrl(accountId: string, env: Environment): string {
-    if (env === Environment.DEVELOPMENT) {
-      return `${WssBaseUrl[Environment.DEVELOPMENT]}/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
-    } else if (env === Environment.UAT) {
-      return `${WssBaseUrl[Environment.UAT]}/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
-    } else if (env === Environment.PRODUCTION) {
-      return `${WssBaseUrl[Environment.PRODUCTION]}/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
-    } else {
-      return `${WssBaseUrl[Environment.PRODUCTION]}/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
-    }
+    return `${WssBaseUrl[env]}/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
   }
 
   /**
