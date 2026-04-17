@@ -1,5 +1,17 @@
 import EventEmitter from "eventemitter3";
-import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse, WorkerInboundMessage } from "../types";
+import {
+  ExotelAIAssistParams,
+  ConnectionStatus,
+  ControllerEvents,
+  Suggestion,
+  TranscriptLine,
+  Sentiment,
+  StreamState,
+  WssEvent,
+  InitialHandshakeResponse,
+  WssResponse,
+  WorkerInboundMessage,
+} from "../types";
 import { ITransport, createTransport } from "../transport";
 import { Utils } from "../utils";
 
@@ -16,6 +28,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   //   connectionEstablished === true   → server ended a live connection → destroy
   private connectionEstablished = false;
   private readyFired = false;
+  private _streamState: StreamState | null = null;
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -32,6 +45,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     this._clearReconnectTimer();
     this.connectionEstablished = false;
     this.readyFired = false;
+    this._streamState = null;
     this.reconnectAttempt = 0;
     this._setStatus("connecting");
     this._ensureTransport();
@@ -82,6 +96,10 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     return this.status;
   }
 
+  getStreamState(): StreamState | null {
+    return this._streamState;
+  }
+
   private _ensureTransport(): void {
     if (this.transport) return;
     this.transport = createTransport(Utils.hash(this.params));
@@ -98,7 +116,6 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         break;
 
       case "ACKNOWLEDGED":
-        this._fireReady();
         break;
 
       case "DISCONNECTED":
@@ -184,7 +201,15 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
     if (msgType === "ack") {
       this.transport?.markAcknowledged();
-      this._fireReady();
+      const state = (parsed as WssResponse).stream_state;
+      if (state) {
+        this._streamState = state;
+        this.emit("streamState", state);
+        // We are firing ready because we need to show the UI immediately when the stream is connected or throttled.
+        if (state === "connected" || state === "throttled") {
+          this._fireReady();
+        }
+      }
     }
 
     if (parsed.config) {
@@ -206,7 +231,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
           const last = msg.transcript_segments?.[msg.transcript_segments.length - 1];
           return {
             id: String(msg.sequence),
-            text: msg.transcript_segments?.[0]?.text ?? "",
+            value: msg.transcript_segments?.[0]?.value ?? "",
             startTime: first?.start_timestamp ? Date.parse(first.start_timestamp) : now,
             endTime: last?.end_timestamp ? Date.parse(last.end_timestamp) : now,
             isFinal: msg.transcript_segments.every((s) => s.is_final),
@@ -215,18 +240,18 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         this.emit("transcript", lines);
       }
 
-      if (event.event_type === "suggestion" && event.text) {
+      if (event.event_type === "suggestion" && event.value) {
         const suggestion: Suggestion = {
           id: Utils.getUniqueId(),
-          text: event.text,
+          value: event.value,
           timestamp: now,
         };
         this.emit("suggestion", suggestion);
       }
 
-      if (event.event_type === "sentiment" && event.text) {
+      if (event.event_type === "sentiment" && event.value) {
         const sentiment: Sentiment = {
-          label: event.text.toLowerCase() as Sentiment["label"],
+          label: event.value.toLowerCase() as Sentiment["label"],
           timestamp: now,
         };
         this.emit("sentiment", sentiment);

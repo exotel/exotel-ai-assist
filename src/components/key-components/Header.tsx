@@ -10,8 +10,8 @@ export function Header({ sentiment, botConfig }: { sentiment: Sentiment | null; 
 
   const getSentimentIcon = () => {
     if (!sentiment) return null;
-    if (sentiment.label === "positive") return <Smile size={18} />;
-    if (sentiment.label === "negative") return <Frown size={18} />;
+    if (sentiment.label?.toLowerCase()?.includes("positive")) return <Smile size={18} />;
+    if (sentiment.label?.toLowerCase()?.includes("negative")) return <Frown size={18} />;
     return <Meh size={18} />;
   };
 
@@ -25,8 +25,8 @@ export function Header({ sentiment, botConfig }: { sentiment: Sentiment | null; 
       borderRadius: "10px",
       fontWeight: 500,
     };
-    if (sentiment?.label === "positive") return { ...base, background: "#fef3c7", color: "#92400e" };
-    if (sentiment?.label === "negative") return { ...base, background: "#fee2e2", color: "#991b1b" };
+    if (sentiment?.label?.toLowerCase()?.includes("positive")) return { ...base, background: "#fef3c7", color: "#92400e" };
+    if (sentiment?.label?.toLowerCase()?.includes("negative")) return { ...base, background: "#fee2e2", color: "#991b1b" };
     return { ...base, background: "#f3f4f6", color: "#374151" };
   };
 

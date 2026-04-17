@@ -1,12 +1,20 @@
 import React, { useEffect, useRef } from "react";
 
-import { TranscriptLine, BotConfig } from "../../types";
+import { TranscriptLine, BotConfig, StreamState } from "../../types";
 import LoadingBox from "../LoadingBox";
 import { EmptyState } from "../EmptyState";
 import "../../styles/index.css";
 import { Utils } from "../../utils";
 
-export function TranscriptTab({ transcripts, connected, botConfig }: { transcripts: TranscriptLine[]; connected: boolean; botConfig: BotConfig | null }): JSX.Element {
+export function TranscriptTab({
+  transcripts,
+  connected,
+  botConfig,
+}: {
+  transcripts: TranscriptLine[];
+  connected: boolean;
+  botConfig: BotConfig | null;
+}): JSX.Element {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,7 +66,7 @@ export function TranscriptTab({ transcripts, connected, botConfig }: { transcrip
             >
               {Utils.formatTimestamp(line.startTime)}
             </span>
-            <span style={{ flex: 1, color: "#111827", fontSize: "15px" }}>{line.text}</span>
+            <span style={{ flex: 1, color: "#111827", fontSize: "15px" }}>{line.value}</span>
           </div>
         ))}
       </div>

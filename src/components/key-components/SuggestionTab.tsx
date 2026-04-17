@@ -1,13 +1,21 @@
 import React from "react";
 import { Copy } from "lucide-react";
 
-import { Suggestion, BotConfig } from "../../types";
+import { Suggestion, BotConfig, StreamState } from "../../types";
 import LoadingBox from "../LoadingBox";
 import { EmptyState } from "../EmptyState";
 import { useToast } from "../Toast";
 import "../../styles/index.css";
 
-export function SuggestionsTab({ suggestions, connected, botConfig }: { suggestions: Suggestion[]; connected: boolean; botConfig: BotConfig | null }): JSX.Element {
+export function SuggestionsTab({
+  suggestions,
+  connected,
+  botConfig,
+}: {
+  suggestions: Suggestion[];
+  connected: boolean;
+  botConfig: BotConfig | null;
+}): JSX.Element {
   const toast = useToast();
 
   const handleCopy = async (text: string) => {
@@ -62,18 +70,18 @@ export function SuggestionsTab({ suggestions, connected, botConfig }: { suggesti
               <div className="oa-suggestion-card--recent-wrapper" style={{ flex: "1 1 auto", maxWidth: "80%" }}>
                 <div className={cardClass}>
                   <span className="oa-suggestion-text" style={{ fontSize: "15px" }}>
-                    {suggestion.text}
+                    {suggestion.value}
                   </span>
                 </div>
               </div>
             ) : (
               <div className={cardClass} style={{ flex: "1 1 auto", maxWidth: "80%" }}>
                 <span className="oa-suggestion-text" style={{ fontSize: "15px" }}>
-                  {suggestion.text}
+                  {suggestion.value}
                 </span>
               </div>
             )}
-            <button className="oa-copy-icon" aria-label="Copy suggestion" onClick={() => handleCopy(suggestion.text)} style={{ flexShrink: 0, marginTop: "10px" }}>
+            <button className="oa-copy-icon" aria-label="Copy suggestion" onClick={() => handleCopy(suggestion.value)} style={{ flexShrink: 0, marginTop: "10px" }}>
               <Copy size={14} />
             </button>
           </div>

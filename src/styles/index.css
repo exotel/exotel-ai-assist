@@ -216,6 +216,157 @@
 }
 
 /* -----------------------------------------------------------------------
+   Stream-state overlay (throttled / disconnected)
+   ----------------------------------------------------------------------- */
+.oa-stream-overlay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.oa-stream-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.oa-stream-banner-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1px;
+}
+
+.oa-stream-banner-text {
+  flex: 1;
+}
+
+.oa-stream-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 0;
+}
+
+.oa-stream-empty-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.oa-stream-empty-title {
+  color: #111827;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.oa-stream-empty-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* -----------------------------------------------------------------------
+   Throttle banner
+   ----------------------------------------------------------------------- */
+.oa-throttle-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fcefee;
+  border: 1px solid #e8cecb;
+  color: #833d09;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.oa-throttle-banner-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1px;
+}
+
+.oa-throttle-banner-text {
+  flex: 1;
+}
+
+/* -----------------------------------------------------------------------
+   Starting loader (initial connection spinner)
+   ----------------------------------------------------------------------- */
+.oa-starting-loader {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 0;
+  height: 100%;
+}
+
+.oa-starting-spinner {
+  width: 48px;
+  height: 48px;
+  animation: oa-spinner-rotate 1.4s linear infinite;
+}
+
+.oa-starting-spinner-track {
+  stroke: #e5e7eb;
+}
+
+.oa-starting-spinner-arc {
+  stroke: #2563eb;
+  stroke-dasharray: 80, 126;
+  stroke-dashoffset: 0;
+  animation: oa-spinner-dash 1.4s ease-in-out infinite;
+}
+
+@keyframes oa-spinner-rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes oa-spinner-dash {
+  0% {
+    stroke-dasharray: 1, 126;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 80, 126;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 80, 126;
+    stroke-dashoffset: -124;
+  }
+}
+
+.oa-starting-loader-text {
+  color: #111827;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+/* -----------------------------------------------------------------------
    Misc helpers
    ----------------------------------------------------------------------- */
 .oa-muted {
