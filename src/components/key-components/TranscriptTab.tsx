@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-import { TranscriptLine, BotConfig, StreamState } from "../../types";
+import { TranscriptLine, BotConfig } from "../../types";
 import LoadingBox from "../LoadingBox";
 import { EmptyState } from "../EmptyState";
 import "../../styles/index.css";

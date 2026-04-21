@@ -1,7 +1,7 @@
 import React from "react";
 import { Copy } from "lucide-react";
 
-import { Suggestion, BotConfig, StreamState } from "../../types";
+import { Suggestion, BotConfig } from "../../types";
 import LoadingBox from "../LoadingBox";
 import { EmptyState } from "../EmptyState";
 import { useToast } from "../Toast";
