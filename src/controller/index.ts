@@ -202,14 +202,12 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     if (msgType === "ack") {
       this.transport?.markAcknowledged();
       const state = (parsed as WssResponse).stream_state;
-      if (state) {
-        this._streamState = state;
-        this.emit("streamState", state);
-        // We are firing ready because we need to show the UI immediately when the stream is connected or throttled.
-        if (state === "connected" || state === "throttled") {
-          this._fireReady();
-        }
-      }
+      if (state) this._handleStreamStatus(state);
+    }
+
+    if (msgType === "stream_status") {
+      const state = (parsed as WssResponse).stream_state;
+      if (state) this._handleStreamStatus(state);
     }
 
     if (parsed.config) {
@@ -256,6 +254,15 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         };
         this.emit("sentiment", sentiment);
       }
+    }
+  }
+
+  private _handleStreamStatus(state: StreamState): void {
+    this._streamState = state;
+    this.emit("streamState", state);
+    // We are firing ready because we need to show the UI immediately when the stream is connected or throttled.
+    if (state === "connected" || state === "throttled") {
+      this._fireReady();
     }
   }
 
