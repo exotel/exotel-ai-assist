@@ -70,7 +70,7 @@ interface TranscriptMessage {
 }
 
 export interface WssEvent {
-  event_type: "suggestion" | "sentiment";
+  event_type: "suggestion" | "sentiment" | "transcript";
   transcript: TranscriptMessage[];
   value: string;
 }
