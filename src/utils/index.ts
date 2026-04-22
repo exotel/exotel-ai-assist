@@ -29,7 +29,7 @@ export class Utils {
    * @returns The base WebSocket URL.
    */
   static getWssBaseUrl(accountId: string): string {
-    return `wss://ai-assist.in.exotel.com/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
+    return `wss://aiasisst-uat.in.exotel.com/ai-assist/ws/v1/accounts/${accountId}/ai-assistants/conversation-events`;
   }
 
   /**
