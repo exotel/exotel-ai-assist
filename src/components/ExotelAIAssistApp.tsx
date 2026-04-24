@@ -30,6 +30,23 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
 
   const connected = streamState === "connected";
 
+  function renderProperEmptyContent(): JSX.Element | null {
+    if (streamState === "throttled") {
+      return (
+        <EmptyState
+          title="AI Assist Unavailable"
+          subtitle="Available again on your next call"
+          showWarningBanner={true}
+          warningBannerMessage="AI Assist couldn't join this call — capacity is full. It should be ready for your next call."
+        />
+      );
+    }
+    if (streamState === "disconnected") {
+      return <EmptyState title="AI Assist is currently inactive" subtitle="we were unable to establish a connection." />;
+    }
+    return null;
+  }
+
   return (
     <Tooltip.Provider>
       <div className="oa-theme-root">
@@ -60,12 +77,7 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
                   </Tabs.Content>
                 </Tabs.Root>
               ) : (
-                <EmptyState
-                  title="AI Assist Unavailable"
-                  subtitle="Available again on your next call"
-                  showWarningBanner={true}
-                  warningBannerMessage="AI Assist couldn't join this call — capacity is full. It should be ready for your next call."
-                />
+                renderProperEmptyContent()
               )}
             </div>
           </div>
