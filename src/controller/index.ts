@@ -55,7 +55,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   disconnect(): void {
     this._clearReconnectTimer();
     this.transport?.disconnect();
-    if (this.readyFired) {
+    if (this.readyFired && this._streamState !== "throttled") {
       this.readyFired = false;
       this.emit("onReady", false);
     }
@@ -262,9 +262,11 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   private _handleStreamStatus(state: StreamState): void {
     this._streamState = state;
     this.emit("streamState", state);
-    // We are firing ready because we need to show the UI immediately when the stream is connected or throttled.
     if (state === "connected" || state === "throttled") {
       this._fireReady();
+    } else if (state === "disconnected" && this.readyFired) {
+      this.readyFired = false;
+      this.emit("onReady", false);
     }
   }
 

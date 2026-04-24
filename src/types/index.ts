@@ -43,7 +43,7 @@ export type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnect
  * - `throttled`    – capacity full; the bot cannot join this call
  * - `pending` – stream is pending
  */
-export type StreamState = "connected" | "throttled" | "pending";
+export type StreamState = "connected" | "throttled" | "pending" | "disconnected";
 
 // ---------------------------------------------------------------------------
 // Internal-only backend response types
