@@ -120,7 +120,8 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
       case "DISCONNECTED":
         if (this.connectionEstablished) {
-          if (this.readyFired) {
+          const wasThrottled = this._streamState === "throttled";
+          if (this.readyFired && !wasThrottled) {
             this.readyFired = false;
             this.emit("onReady", false);
           }
