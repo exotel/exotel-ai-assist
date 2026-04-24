@@ -41,7 +41,7 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
         />
       );
     }
-    if (streamState === "disconnected") {
+    if (streamState === "connection_timeout") {
       return <EmptyState title="AI Assist is currently inactive" subtitle="we were unable to establish a connection." />;
     }
     return null;

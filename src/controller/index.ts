@@ -225,7 +225,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       if (!event) continue;
 
       if (event.event_type === "transcript" && event.value) {
-        const transcripts = Array.isArray(event?.value) ? event.value : event?.transcript ?? []
+        const transcripts = Array.isArray(event?.value) ? event.value : (event?.transcript ?? []);
         const lines: TranscriptLine[] = transcripts.map((msg) => {
           const first = msg.transcript_segments?.[0];
           const last = msg.transcript_segments?.[msg.transcript_segments.length - 1];
@@ -264,7 +264,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     this.emit("streamState", state);
     if (state === "connected" || state === "throttled") {
       this._fireReady();
-    } else if (state === "disconnected" && this.readyFired) {
+    } else if ((state === "connection_timeout" || state === "disconnected") && this.readyFired) {
       this.readyFired = false;
       this.emit("onReady", false);
     }
