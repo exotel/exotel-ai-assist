@@ -15,6 +15,9 @@ export interface Suggestion {
   id: string;
   text: string;
   timestamp: number;
+  sequence: number;
+  feedbackType: "good" | "bad" | null;
+  badFeedbackReason: string | null;
 }
 
 /** A single spoken line as received in the live transcript. */
@@ -45,7 +48,11 @@ export type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnect
 export interface BotConfig {
   sentiment: boolean;
   transcript: boolean;
-  suggestions: boolean;
+  suggestion: {
+    enabled: boolean;
+    feedback_enabled: boolean;
+    bad_feedback_options?: string[];
+  };
   status: "LIVE" | "DRAFT" | "DEACTIVATED";
 }
 
@@ -61,10 +68,23 @@ interface TranscriptMessage {
   transcript_segments: TranscriptSegment[];
 }
 
+export interface SuggestionValue {
+  text: string;
+  sequence: number;
+}
+
 export interface WssEvent {
   event_type: "suggestion" | "sentiment";
   transcript: TranscriptMessage[];
   text: string;
+  value?: SuggestionValue | string;
+}
+
+export interface SuggestionFeedbackMessage {
+  type: "suggestion_feedback";
+  sequence: number;
+  feedback_type: "good" | "bad" | null;
+  bad_feedback_reason: string | null;
 }
 
 export interface InitialHandshakeResponse {

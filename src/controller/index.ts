@@ -1,5 +1,5 @@
 import EventEmitter from "eventemitter3";
-import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse, WorkerInboundMessage } from "../types";
+import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse, WorkerInboundMessage, SuggestionFeedbackMessage } from "../types";
 import { ITransport, createTransport } from "../transport";
 import { Utils } from "../utils";
 
@@ -80,6 +80,28 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
   getStatus(): ConnectionStatus {
     return this.status;
+  }
+
+  sendSuggestionFeedback(sequence: number, feedbackType: "good" | "bad" | null, badFeedbackReason: string | null = null): boolean {
+    if (!this.transport || this.status !== "connected") {
+      console.warn("[ExotelAIAssist] Cannot send feedback: not connected");
+      return false;
+    }
+
+    const message: SuggestionFeedbackMessage = {
+      type: "suggestion_feedback",
+      sequence,
+      feedback_type: feedbackType,
+      bad_feedback_reason: badFeedbackReason,
+    };
+
+    try {
+      this.transport.send(JSON.stringify(message));
+      return true;
+    } catch (error) {
+      console.error("[ExotelAIAssist] Failed to send feedback:", error);
+      return false;
+    }
   }
 
   private _ensureTransport(): void {
@@ -215,13 +237,22 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         this.emit("transcript", lines);
       }
 
-      if (event.event_type === "suggestion" && event.text) {
-        const suggestion: Suggestion = {
-          id: Utils.getUniqueId(),
-          text: event.text,
-          timestamp: now,
-        };
-        this.emit("suggestion", suggestion);
+      if (event.event_type === "suggestion") {
+        const val = event.value;
+        const text = typeof val === "object" && val !== null && "text" in val ? val.text : typeof val === "string" ? val : event.text;
+        const sequence = typeof val === "object" && val !== null && "sequence" in val ? val.sequence : 0;
+        
+        if (text) {
+          const suggestion: Suggestion = {
+            id: Utils.getUniqueId(),
+            text,
+            timestamp: now,
+            sequence,
+            feedbackType: null,
+            badFeedbackReason: null,
+          };
+          this.emit("suggestion", suggestion);
+        }
       }
 
       if (event.event_type === "sentiment" && event.text) {
