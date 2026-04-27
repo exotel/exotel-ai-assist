@@ -19,7 +19,7 @@ export interface ExotelAIAssistProps extends ExotelAIAssistParams {
 }
 
 export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssistProps): JSX.Element {
-  const { isReady, streamState, suggestions, transcripts, sentiment, botConfig } = useExotelAIAssist(params as ExotelAIAssistParams);
+  const { streamState, isReady, suggestions, transcripts, sentiment, botConfig, sendSuggestionFeedback } = useExotelAIAssist(params as ExotelAIAssistParams);
 
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
@@ -69,7 +69,7 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
                   </Tabs.List>
 
                   <Tabs.Content value="suggestions" className="oa-tabs-content" style={{ paddingTop: 16 }}>
-                    <SuggestionsTab suggestions={suggestions} connected={connected} botConfig={botConfig} />
+                    <SuggestionsTab suggestions={suggestions} connected={connected} botConfig={botConfig} sendSuggestionFeedback={sendSuggestionFeedback} />
                   </Tabs.Content>
 
                   <Tabs.Content value="transcript" className="oa-tabs-content" style={{ paddingTop: 16 }}>
