@@ -178,9 +178,10 @@
 }
 
 /* -----------------------------------------------------------------------
-   Copy icon button
+   Copy icon button and feedback icons
    ----------------------------------------------------------------------- */
-.oa-copy-icon {
+.oa-copy-icon,
+.oa-feedback-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -196,9 +197,67 @@
   padding: 0;
 }
 
-.oa-copy-icon:hover {
+.oa-copy-icon:hover,
+.oa-feedback-icon:hover {
   background: #f9fafb;
   color: #374151;
+}
+
+.oa-feedback-icon--positive {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #16a34a !important;
+}
+
+.oa-feedback-icon--negative {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+}
+
+.oa-feedback-icon:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.oa-feedback-icon--positive:disabled,
+.oa-feedback-icon--negative:disabled {
+  opacity: 1;
+}
+
+/* Feedback reason pill buttons */
+.oa-feedback-reason-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  font-family: inherit;
+}
+
+.oa-feedback-reason-btn:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.oa-feedback-reason-btn--selected {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+}
+
+.oa-feedback-reason-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* -----------------------------------------------------------------------

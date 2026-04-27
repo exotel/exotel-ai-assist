@@ -31,6 +31,7 @@ export interface UseExotelAIAssistReturn {
   connect: () => void;
   disconnect: () => void;
   setParams: (patch: Partial<ExotelAIAssistParams>) => void;
+  sendSuggestionFeedback: (sequence: number, feedbackType: "good" | "bad" | null, badFeedbackReason?: string | null) => boolean;
 }
 
 /** Internal extended return — adds botConfig for the UI component only. */
@@ -89,5 +90,20 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const disconnect = useCallback(() => controllerRef.current?.disconnect(), []);
   const setParams = useCallback((patch: Partial<ExotelAIAssistParams>) => controllerRef.current?.setParams(patch), []);
 
-  return { isReady, streamState, suggestions, transcripts, sentiment, botConfig, lastError, connect, disconnect, setParams };
+  const sendSuggestionFeedback = useCallback(
+    (sequence: number, feedbackType: "good" | "bad" | null, badFeedbackReason: string | null = null): boolean => {
+      const sent = controllerRef.current?.sendSuggestionFeedback(sequence, feedbackType, badFeedbackReason) ?? false;
+      
+      if (sent) {
+        setSuggestions((prev) =>
+          prev.map((s) => (s.sequence === sequence ? { ...s, feedbackType, badFeedbackReason } : s))
+        );
+      }
+      
+      return sent;
+    },
+    []
+  );
+
+  return { streamState, isReady, suggestions, transcripts, sentiment, botConfig, lastError, connect, disconnect, setParams, sendSuggestionFeedback };
 }
