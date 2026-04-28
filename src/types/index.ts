@@ -61,7 +61,8 @@ interface TranscriptSegment {
   is_final: boolean;
   end_timestamp: string;
   start_timestamp: string;
-  value: string;
+  speaker: string;
+  text: string;
 }
 
 interface TranscriptMessage {
@@ -69,11 +70,27 @@ interface TranscriptMessage {
   transcript_segments: TranscriptSegment[];
 }
 
-export interface WssEvent {
-  event_type: "suggestion" | "sentiment" | "transcript";
-  transcript: TranscriptMessage[];
+export interface SuggestionValue {
+  sequence: number;
+  text: string;
+}
+
+interface WssTranscriptEvent {
+  event_type: "transcript";
+  value: TranscriptMessage[];
+}
+
+interface WssSentimentEvent {
+  event_type: "sentiment";
   value: string;
 }
+
+interface WssSuggestionEvent {
+  event_type: "suggestion";
+  value: SuggestionValue;
+}
+
+export type WssEvent = WssTranscriptEvent | WssSentimentEvent | WssSuggestionEvent;
 
 export interface InitialHandshakeResponse {
   type: string;

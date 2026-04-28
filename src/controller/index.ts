@@ -225,16 +225,16 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       if (!event) continue;
 
       if (event.event_type === "transcript" && event.value) {
-        const transcripts = Array.isArray(event?.value) ? event.value : (event?.transcript ?? []);
+        const transcripts = event.value;
         const lines: TranscriptLine[] = transcripts.map((msg) => {
           const first = msg.transcript_segments?.[0];
           const last = msg.transcript_segments?.[msg.transcript_segments.length - 1];
           return {
             id: String(msg.sequence),
-            value: msg.transcript_segments?.[0]?.text ?? "",
+            value: first?.text ?? "",
             startTime: first?.start_timestamp ? Date.parse(first.start_timestamp) : now,
             endTime: last?.end_timestamp ? Date.parse(last.end_timestamp) : now,
-            isFinal: msg.transcript_segments.every((s: any) => s.is_final),
+            isFinal: msg.transcript_segments.every((s) => s.is_final),
           };
         });
         this.emit("transcript", lines);
@@ -242,8 +242,8 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
       if (event.event_type === "suggestion" && event.value) {
         const suggestion: Suggestion = {
-          id: Utils.getUniqueId(),
-          value: event.value,
+          id: String(event.value.sequence),
+          value: event.value.text,
           timestamp: now,
         };
         this.emit("suggestion", suggestion);
