@@ -15,6 +15,9 @@ export interface Suggestion {
   id: string;
   value: string;
   timestamp: number;
+  sequence: number;
+  feedbackType: "good" | "bad" | null;
+  badFeedbackReason: string | null;
 }
 
 /** A single spoken line as received in the live transcript. */
@@ -43,7 +46,7 @@ export type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnect
  * - `throttled`    – capacity full; the bot cannot join this call
  * - `pending` – stream is pending
  */
-export type StreamState = "connected" | "throttled" | "pending" | "disconnected" | 'connection_timeout';
+export type StreamState = "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout";
 
 // ---------------------------------------------------------------------------
 // Internal-only backend response types
@@ -53,7 +56,11 @@ export type StreamState = "connected" | "throttled" | "pending" | "disconnected"
 export interface BotConfig {
   sentiment: boolean;
   transcript: boolean;
-  suggestions: boolean;
+  suggestion: {
+    enabled: boolean;
+    feedback_enabled: boolean;
+    bad_feedback_options?: string[];
+  };
   status: "LIVE" | "DRAFT" | "DEACTIVATED";
 }
 
@@ -71,8 +78,14 @@ interface TranscriptMessage {
 }
 
 export interface SuggestionValue {
-  sequence: number;
   text: string;
+  sequence: number;
+}
+export interface SuggestionFeedbackMessage {
+  type: "suggestion_feedback";
+  sequence: number;
+  feedback_type: "good" | "bad" | null;
+  bad_feedback_reason: string | null;
 }
 
 interface WssTranscriptEvent {
@@ -128,4 +141,9 @@ export interface ControllerEvents {
   raw: (data: unknown) => void;
 }
 
-export type WorkerInboundMessage = { type: "MESSAGE"; payload: string } | { type: "CONNECTED" } | { type: "ACKNOWLEDGED" } | { type: "DISCONNECTED"; code?: number } | { type: "ERROR"; message: string };
+export type WorkerInboundMessage =
+  | { type: "MESSAGE"; payload: string }
+  | { type: "CONNECTED" }
+  | { type: "ACKNOWLEDGED" }
+  | { type: "DISCONNECTED"; code?: number }
+  | { type: "ERROR"; message: string };

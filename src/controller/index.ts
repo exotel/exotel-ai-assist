@@ -6,11 +6,12 @@ import {
   Suggestion,
   TranscriptLine,
   Sentiment,
-  StreamState,
   WssEvent,
   InitialHandshakeResponse,
   WssResponse,
   WorkerInboundMessage,
+  SuggestionFeedbackMessage,
+  StreamState,
 } from "../types";
 import { ITransport, createTransport } from "../transport";
 import { Utils } from "../utils";
@@ -98,6 +99,28 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
   getStreamState(): StreamState | null {
     return this._streamState;
+  }
+
+  sendSuggestionFeedback(sequence: number, feedbackType: "good" | "bad" | null, badFeedbackReason: string | null = null): boolean {
+    if (!this.transport || this.status !== "connected") {
+      console.warn("[ExotelAIAssist] Cannot send feedback: not connected");
+      return false;
+    }
+
+    const message: SuggestionFeedbackMessage = {
+      type: "suggestion_feedback",
+      sequence,
+      feedback_type: feedbackType,
+      bad_feedback_reason: badFeedbackReason,
+    };
+
+    try {
+      this.transport.send(JSON.stringify(message));
+      return true;
+    } catch (error) {
+      console.error("[ExotelAIAssist] Failed to send feedback:", error);
+      return false;
+    }
   }
 
   private _ensureTransport(): void {
@@ -245,6 +268,9 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
           id: String(event.value.sequence),
           value: event.value.text,
           timestamp: now,
+          sequence: event.value.sequence,
+          feedbackType: null,
+          badFeedbackReason: null,
         };
         this.emit("suggestion", suggestion);
       }
