@@ -75,22 +75,17 @@ export interface SuggestionValue {
   text: string;
 }
 
-interface WssEventBase {
-  transcript: TranscriptMessage[];
-  text: string;
-}
-
-interface WssTranscriptEvent extends WssEventBase {
+interface WssTranscriptEvent {
   event_type: "transcript";
   value: TranscriptMessage[];
 }
 
-interface WssSentimentEvent extends WssEventBase {
+interface WssSentimentEvent {
   event_type: "sentiment";
   value: string;
 }
 
-interface WssSuggestionEvent extends WssEventBase {
+interface WssSuggestionEvent {
   event_type: "suggestion";
   value: SuggestionValue;
 }
