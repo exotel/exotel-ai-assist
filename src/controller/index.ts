@@ -116,6 +116,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
     try {
       this.transport.send(JSON.stringify(message));
+      this.transport.broadcastFeedbackSync(sequence, feedbackType, badFeedbackReason);
       return true;
     } catch (error) {
       console.error("[ExotelAIAssist] Failed to send feedback:", error);
@@ -145,12 +146,13 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         if (this.connectionEstablished) {
           const wasThrottled = this._streamState === "throttled";
           if (this.readyFired && !wasThrottled) {
-            this.readyFired = false;
             this.emit("onReady", false);
           }
+          this.connectionEstablished = false;
+          this.readyFired = false;
+          this._streamState = null;
           this._setStatus("disconnected");
           this.emit("onCallEnd");
-          this.destroy();
         } else {
           this._scheduleReconnect();
         }
@@ -162,6 +164,14 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
       case "MESSAGE":
         if (msg.payload) this._handleServerPayload(msg.payload);
+        break;
+
+      case "FEEDBACK_SYNC":
+        this.emit("suggestionFeedbackSync", {
+          sequence: msg.sequence,
+          feedbackType: msg.feedbackType,
+          badFeedbackReason: msg.badFeedbackReason,
+        });
         break;
     }
   }
@@ -224,7 +234,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     }
 
     if (msgType === "ack") {
-      this.transport?.markAcknowledged();
+      this.transport?.markAcknowledged(raw);
       const state = (parsed as WssResponse).stream_state;
       if (state) this._handleStreamStatus(state);
     }

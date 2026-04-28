@@ -63,10 +63,22 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     const ctrl = new ExotelAIAssistController(params);
     controllerRef.current = ctrl;
 
-    ctrl.on("onReady", setIsReady);
+    ctrl.on("onReady", (ready) => {
+      setIsReady(ready);
+      if (!ready) {
+        setSuggestions([]);
+        setTranscripts([]);
+        setSentiment(null);
+      }
+    });
     ctrl.on("streamState", setStreamState);
     ctrl.on("botConfig", setBotConfig);
-    ctrl.on("suggestion", (s) => setSuggestions((prev) => [...prev, s].slice(-MAX_SUGGESTIONS)));
+    ctrl.on("suggestion", (s) =>
+      setSuggestions((prev) => {
+        if (prev.some((existing) => existing.sequence === s.sequence)) return prev;
+        return [...prev, s].slice(-MAX_SUGGESTIONS);
+      }),
+    );
     ctrl.on("sentiment", setSentiment);
     ctrl.on("transcript", (lines) =>
       setTranscripts((prev) => {
@@ -75,6 +87,9 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
         return Array.from(map.values()).sort((a, b) => a.startTime - b.startTime);
       }),
     );
+    ctrl.on("suggestionFeedbackSync", ({ sequence, feedbackType, badFeedbackReason }) => {
+      setSuggestions((prev) => prev.map((s) => (s.sequence === sequence ? { ...s, feedbackType, badFeedbackReason } : s)));
+    });
     ctrl.on("error", setLastError);
 
     ctrl.connect();
