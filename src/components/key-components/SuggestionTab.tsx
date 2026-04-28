@@ -104,19 +104,21 @@ export function SuggestionsTab({
         const cardClass = isRecent ? "oa-suggestion-card oa-suggestion-card--recent" : "oa-suggestion-card oa-suggestion-card--older";
         const showReasons = suggestion.feedbackType === "bad" || expandedSequence === suggestion.sequence;
 
+        const cardMinHeight = feedbackEnabled ? "108px" : undefined;
+
         return (
           <div key={suggestion.id}>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: "8px" }}>
               {isRecent ? (
-                <div className="oa-suggestion-card--recent-wrapper" style={{ flex: "1 1 auto", maxWidth: "72%" }}>
-                  <div className={cardClass}>
+                <div className="oa-suggestion-card--recent-wrapper" style={{ flex: "1 1 auto", maxWidth: "72%", minHeight: cardMinHeight }}>
+                  <div className={cardClass} style={{ minHeight: cardMinHeight ? `calc(${cardMinHeight} - 4px)` : undefined, height: "100%" }}>
                     <span className="oa-suggestion-text" style={{ fontSize: "15px" }}>
                       {suggestion.value}
                     </span>
                   </div>
                 </div>
               ) : (
-                <div className={cardClass} style={{ flex: "1 1 auto", maxWidth: "72%" }}>
+                <div className={cardClass} style={{ flex: "1 1 auto", maxWidth: "72%", minHeight: cardMinHeight }}>
                   <span className="oa-suggestion-text" style={{ fontSize: "15px" }}>
                     {suggestion.value}
                   </span>
