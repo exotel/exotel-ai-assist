@@ -145,12 +145,13 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         if (this.connectionEstablished) {
           const wasThrottled = this._streamState === "throttled";
           if (this.readyFired && !wasThrottled) {
-            this.readyFired = false;
             this.emit("onReady", false);
           }
+          this.connectionEstablished = false;
+          this.readyFired = false;
+          this._streamState = null;
           this._setStatus("disconnected");
           this.emit("onCallEnd");
-          this.destroy();
         } else {
           this._scheduleReconnect();
         }

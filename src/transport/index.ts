@@ -168,6 +168,9 @@ export class BroadcastChannelTransport implements ITransport {
   }
 
   destroy(): void {
+    if (this.isLeader) {
+      this.channel.postMessage({ type: "DISCONNECTED", code: 1000 } satisfies WorkerInboundMessage);
+    }
     this._destroyed = true;
     this.disconnect();
     this.channel.close();

@@ -63,7 +63,14 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     const ctrl = new ExotelAIAssistController(params);
     controllerRef.current = ctrl;
 
-    ctrl.on("onReady", setIsReady);
+    ctrl.on("onReady", (ready) => {
+      setIsReady(ready);
+      if (!ready) {
+        setSuggestions([]);
+        setTranscripts([]);
+        setSentiment(null);
+      }
+    });
     ctrl.on("streamState", setStreamState);
     ctrl.on("botConfig", setBotConfig);
     ctrl.on("suggestion", (s) => setSuggestions((prev) => [...prev, s].slice(-MAX_SUGGESTIONS)));
