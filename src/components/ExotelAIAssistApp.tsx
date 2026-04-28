@@ -10,6 +10,7 @@ import "../styles/index.css";
 import { Header } from "./key-components/Header";
 import { SuggestionsTab } from "./key-components/SuggestionTab";
 import { TranscriptTab } from "./key-components/TranscriptTab";
+import { EmptyState } from "./EmptyState";
 
 export interface ExotelAIAssistProps extends ExotelAIAssistParams {
   className?: string;
@@ -18,7 +19,7 @@ export interface ExotelAIAssistProps extends ExotelAIAssistParams {
 }
 
 export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssistProps): JSX.Element {
-  const { status, isReady, suggestions, transcripts, sentiment, botConfig } = useExotelAIAssist(params as ExotelAIAssistParams);
+  const { isReady, streamState, suggestions, transcripts, sentiment, botConfig } = useExotelAIAssist(params as ExotelAIAssistParams);
 
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
@@ -27,7 +28,24 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
     onReadyRef.current?.(isReady);
   }, [isReady]);
 
-  const connected = status === "connected";
+  const connected = streamState === "connected";
+
+  function renderProperEmptyContent(): JSX.Element | null {
+    if (streamState === "throttled") {
+      return (
+        <EmptyState
+          title="AI Assist Unavailable"
+          subtitle="Available again on your next call"
+          showWarningBanner={true}
+          warningBannerMessage="AI Assist couldn't join this call — capacity is full. It should be ready for your next call."
+        />
+      );
+    }
+    if (streamState === "connection_timeout") {
+      return <EmptyState title="AI Assist is currently inactive" subtitle="We were unable to establish a connection." />;
+    }
+    return null;
+  }
 
   return (
     <Tooltip.Provider>
@@ -37,26 +55,30 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
             <div style={{ flex: 1, width: "100%", minHeight: 0, padding: "0 16px", display: "flex", flexDirection: "column" }}>
               <Header sentiment={sentiment} botConfig={botConfig} />
 
-              <Tabs.Root defaultValue="suggestions" className="oa-tabs" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                <Tabs.List className="oa-tabs-list">
-                  <Tabs.Trigger value="suggestions" className="oa-tabs-trigger">
-                    <Lightbulb size={16} />
-                    Suggestions
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="transcript" className="oa-tabs-trigger" aria-label="Transcript">
-                    <FileText size={16} />
-                    Transcript
-                  </Tabs.Trigger>
-                </Tabs.List>
+              {streamState !== "throttled" ? (
+                <Tabs.Root defaultValue="suggestions" className="oa-tabs" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                  <Tabs.List className="oa-tabs-list">
+                    <Tabs.Trigger value="suggestions" className="oa-tabs-trigger">
+                      <Lightbulb size={16} />
+                      Suggestions
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="transcript" className="oa-tabs-trigger" aria-label="Transcript">
+                      <FileText size={16} />
+                      Transcript
+                    </Tabs.Trigger>
+                  </Tabs.List>
 
-                <Tabs.Content value="suggestions" className="oa-tabs-content" style={{ paddingTop: 16 }}>
-                  <SuggestionsTab suggestions={suggestions} connected={connected} botConfig={botConfig} />
-                </Tabs.Content>
+                  <Tabs.Content value="suggestions" className="oa-tabs-content" style={{ paddingTop: 16 }}>
+                    <SuggestionsTab suggestions={suggestions} connected={connected} botConfig={botConfig} />
+                  </Tabs.Content>
 
-                <Tabs.Content value="transcript" className="oa-tabs-content" style={{ paddingTop: 16 }}>
-                  <TranscriptTab transcripts={transcripts} connected={connected} botConfig={botConfig} />
-                </Tabs.Content>
-              </Tabs.Root>
+                  <Tabs.Content value="transcript" className="oa-tabs-content" style={{ paddingTop: 16 }}>
+                    <TranscriptTab transcripts={transcripts} connected={connected} botConfig={botConfig} />
+                  </Tabs.Content>
+                </Tabs.Root>
+              ) : (
+                renderProperEmptyContent()
+              )}
             </div>
           </div>
         </ToastProvider>

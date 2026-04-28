@@ -13,7 +13,7 @@ export interface ExotelAIAssistParams {
 /** A single AI-generated suggestion for the agent. */
 export interface Suggestion {
   id: string;
-  text: string;
+  value: string;
   timestamp: number;
 }
 
@@ -21,7 +21,7 @@ export interface Suggestion {
 export interface TranscriptLine {
   /** Unique stable ID (derived from the backend sequence number). */
   id: string;
-  text: string;
+  value: string;
   /** Unix timestamp (ms) of the start of this utterance. */
   startTime: number;
   /** Unix timestamp (ms) of the end of this utterance. */
@@ -36,6 +36,14 @@ export interface Sentiment {
 }
 
 export type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "error";
+
+/**
+ * Server-side stream state, received via `stream_status` messages.
+ * - `connected`    – stream is active and healthy
+ * - `throttled`    – capacity full; the bot cannot join this call
+ * - `pending` – stream is pending
+ */
+export type StreamState = "connected" | "throttled" | "pending" | "disconnected" | 'connection_timeout';
 
 // ---------------------------------------------------------------------------
 // Internal-only backend response types
@@ -53,7 +61,7 @@ interface TranscriptSegment {
   is_final: boolean;
   end_timestamp: string;
   start_timestamp: string;
-  text: string;
+  value: string;
 }
 
 interface TranscriptMessage {
@@ -62,20 +70,22 @@ interface TranscriptMessage {
 }
 
 export interface WssEvent {
-  event_type: "suggestion" | "sentiment";
+  event_type: "suggestion" | "sentiment" | "transcript";
   transcript: TranscriptMessage[];
-  text: string;
+  value: string;
 }
 
 export interface InitialHandshakeResponse {
   type: string;
   config: BotConfig;
   events: WssEvent[] | WssEvent;
+  stream_state?: StreamState;
 }
 
 export interface WssResponse {
   config: BotConfig;
   events: WssEvent;
+  stream_state?: StreamState;
 }
 
 export interface ControllerEvents {
@@ -95,6 +105,8 @@ export interface ControllerEvents {
   onCallStart: () => void;
   onCallEnd: () => void;
   statusChange: (status: ConnectionStatus) => void;
+  /** Fires whenever the server sends a `stream_status` message. */
+  streamState: (state: StreamState) => void;
   error: (err: Error) => void;
   raw: (data: unknown) => void;
 }

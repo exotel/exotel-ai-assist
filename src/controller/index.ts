@@ -1,5 +1,17 @@
 import EventEmitter from "eventemitter3";
-import { ExotelAIAssistParams, ConnectionStatus, ControllerEvents, Suggestion, TranscriptLine, Sentiment, WssEvent, InitialHandshakeResponse, WssResponse, WorkerInboundMessage } from "../types";
+import {
+  ExotelAIAssistParams,
+  ConnectionStatus,
+  ControllerEvents,
+  Suggestion,
+  TranscriptLine,
+  Sentiment,
+  StreamState,
+  WssEvent,
+  InitialHandshakeResponse,
+  WssResponse,
+  WorkerInboundMessage,
+} from "../types";
 import { ITransport, createTransport } from "../transport";
 import { Utils } from "../utils";
 
@@ -16,6 +28,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   //   connectionEstablished === true   → server ended a live connection → destroy
   private connectionEstablished = false;
   private readyFired = false;
+  private _streamState: StreamState | null = null;
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -32,6 +45,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     this._clearReconnectTimer();
     this.connectionEstablished = false;
     this.readyFired = false;
+    this._streamState = null;
     this.reconnectAttempt = 0;
     this._setStatus("connecting");
     this._ensureTransport();
@@ -41,7 +55,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   disconnect(): void {
     this._clearReconnectTimer();
     this.transport?.disconnect();
-    if (this.readyFired) {
+    if (this.readyFired && this._streamState !== "throttled") {
       this.readyFired = false;
       this.emit("onReady", false);
     }
@@ -82,6 +96,10 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     return this.status;
   }
 
+  getStreamState(): StreamState | null {
+    return this._streamState;
+  }
+
   private _ensureTransport(): void {
     if (this.transport) return;
     this.transport = createTransport(Utils.hash(this.params));
@@ -98,12 +116,12 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         break;
 
       case "ACKNOWLEDGED":
-        this._fireReady();
         break;
 
       case "DISCONNECTED":
         if (this.connectionEstablished) {
-          if (this.readyFired) {
+          const wasThrottled = this._streamState === "throttled";
+          if (this.readyFired && !wasThrottled) {
             this.readyFired = false;
             this.emit("onReady", false);
           }
@@ -184,7 +202,13 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
     if (msgType === "ack") {
       this.transport?.markAcknowledged();
-      this._fireReady();
+      const state = (parsed as WssResponse).stream_state;
+      if (state) this._handleStreamStatus(state);
+    }
+
+    if (msgType === "stream_status") {
+      const state = (parsed as WssResponse).stream_state;
+      if (state) this._handleStreamStatus(state);
     }
 
     if (parsed.config) {
@@ -200,37 +224,49 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     for (const event of events) {
       if (!event) continue;
 
-      if (event.transcript && event.transcript.length > 0) {
-        const lines: TranscriptLine[] = event.transcript.map((msg) => {
+      if (event.event_type === "transcript" && event.value) {
+        const transcripts = Array.isArray(event?.value) ? event.value : (event?.transcript ?? []);
+        const lines: TranscriptLine[] = transcripts.map((msg) => {
           const first = msg.transcript_segments?.[0];
           const last = msg.transcript_segments?.[msg.transcript_segments.length - 1];
           return {
             id: String(msg.sequence),
-            text: msg.transcript_segments?.[0]?.text ?? "",
+            value: msg.transcript_segments?.[0]?.text ?? "",
             startTime: first?.start_timestamp ? Date.parse(first.start_timestamp) : now,
             endTime: last?.end_timestamp ? Date.parse(last.end_timestamp) : now,
-            isFinal: msg.transcript_segments.every((s) => s.is_final),
+            isFinal: msg.transcript_segments.every((s: any) => s.is_final),
           };
         });
         this.emit("transcript", lines);
       }
 
-      if (event.event_type === "suggestion" && event.text) {
+      if (event.event_type === "suggestion" && event.value) {
         const suggestion: Suggestion = {
           id: Utils.getUniqueId(),
-          text: event.text,
+          value: event.value,
           timestamp: now,
         };
         this.emit("suggestion", suggestion);
       }
 
-      if (event.event_type === "sentiment" && event.text) {
+      if (event.event_type === "sentiment" && event.value) {
         const sentiment: Sentiment = {
-          label: event.text.toLowerCase() as Sentiment["label"],
+          label: event.value.toLowerCase() as Sentiment["label"],
           timestamp: now,
         };
         this.emit("sentiment", sentiment);
       }
+    }
+  }
+
+  private _handleStreamStatus(state: StreamState): void {
+    this._streamState = state;
+    this.emit("streamState", state);
+    if (state === "connected" || state === "throttled") {
+      this._fireReady();
+    } else if ((state === "connection_timeout" || state === "disconnected") && this.readyFired) {
+      this.readyFired = false;
+      this.emit("onReady", false);
     }
   }
 

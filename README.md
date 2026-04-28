@@ -113,7 +113,7 @@ function AgentDashboard() {
 import { useExotelAIAssist } from "@exotel-npm-dev/exotel-ai-assist/react";
 
 function MyCustomUI({ call_sid }: { call_sid: string }) {
-  const { isReady, status, suggestions, transcripts, lastError } = useExotelAIAssist({
+  const { isReady, streamState, suggestions, transcripts, lastError } = useExotelAIAssist({
     authToken: "your-auth-token",
     call_sid,
     accountId: "your-account-id",
@@ -121,11 +121,14 @@ function MyCustomUI({ call_sid }: { call_sid: string }) {
 
   if (!isReady) return <p>Connecting…</p>;
 
+  if (streamState === "throttled") return <p>AI Assist is at capacity — available on your next call.</p>;
+  if (streamState === "disconnected") return <p>AI Assist disconnected.</p>;
+  if (streamState === "connection_timeout") return <p>Connection timed out.</p>;
+
   return (
     <div>
-      <p>Status: {status}</p>
       {suggestions.map((s) => (
-        <p key={s.id}>{s.text}</p>
+        <p key={s.id}>{s.value}</p>
       ))}
     </div>
   );
@@ -151,7 +154,7 @@ function SuggestionsPanel() {
   return (
     <ul>
       {suggestions.map((s) => (
-        <li key={s.id}>{s.text}</li>
+        <li key={s.id}>{s.value}</li>
       ))}
     </ul>
   );
@@ -184,7 +187,10 @@ ctrl.on("onReady", (ready) => {
 
 ctrl.on("suggestion", (s) => console.log("Suggestion:", s));
 ctrl.on("transcript", (t) => console.log("Transcript:", t));
-ctrl.on("statusChange", (status) => console.log("Status:", status));
+ctrl.on("streamState", (state) => {
+  console.log("Stream state:", state);
+  // state: "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout"
+});
 ctrl.on("error", (err) => console.error("Error:", err));
 
 ctrl.connect();
@@ -233,13 +239,14 @@ Extends `EventEmitter`.
 
 #### Methods
 
-| Method             | Description                                    |
-| ------------------ | ---------------------------------------------- |
-| `connect()`        | Open the WebSocket                             |
-| `disconnect()`     | Close cleanly                                  |
-| `setParams(patch)` | Merge params; reconnects if `call_sid` changes |
-| `destroy()`        | Dispose controller and remove all listeners    |
-| `getStatus()`      | Returns current `ConnectionStatus`             |
+| Method                                  | Description                                    |
+| --------------------------------------- | ---------------------------------------------- |
+| `connect()`                             | Open the WebSocket                             |
+| `disconnect()`                          | Close cleanly                                  |
+| `setParams(patch)`                      | Merge params; reconnects if `call_sid` changes |
+| `destroy()`                             | Dispose controller and remove all listeners    |
+| `getStatus()`                           | Returns current `ConnectionStatus`             |
+| `getStreamState()`                      | Returns current `StreamState \| null`          |
 
 #### Events
 
@@ -249,9 +256,10 @@ Extends `EventEmitter`.
 | `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)                                                                           |
 | `transcript`   | `TranscriptLine[]` | Live transcript update                                                                                          |
 | `sentiment`    | `Sentiment`        | Sentiment label update                                                                                          |
+| `streamState`  | `StreamState`      | Server stream state change (`connected`, `throttled`, `pending`, `disconnected`, `connection_timeout`)          |
 | `onCallStart`  | —                  | Connection opened                                                                                               |
 | `onCallEnd`    | —                  | Connection closed                                                                                               |
-| `statusChange` | `ConnectionStatus` | Status transition                                                                                               |
+| `statusChange` | `ConnectionStatus` | WebSocket-level status transition (internal)                                                                    |
 | `error`        | `Error`            | Any error (auth, parse, max-reconnect)                                                                          |
 | `raw`          | `unknown`          | Every raw server message                                                                                        |
 
@@ -259,34 +267,36 @@ Extends `EventEmitter`.
 
 ### `useExotelAIAssist(params)` — Hook return values
 
-| Field         | Type               | Description                                                            |
-| ------------- | ------------------ | ---------------------------------------------------------------------- |
-| `isReady`     | `boolean`          | `true` after connected + server ack. Multi-tab safe. `false` on disconnect |
-| `status`      | `ConnectionStatus` | Current connection status                                              |
-| `suggestions` | `Suggestion[]`     | AI suggestions, oldest first, capped at 50                             |
-| `transcripts` | `TranscriptLine[]` | Live transcript lines, ordered by start time                           |
-| `sentiment`   | `Sentiment \| null`| Latest sentiment reading                                               |
-| `lastError`   | `Error \| null`    | Most recent error                                                      |
-| `connect()`   | `() => void`       | Manually open the connection                                           |
-| `disconnect()` | `() => void`      | Manually close the connection                                          |
-| `setParams()` | `(patch) => void`  | Merge params; reconnects if connection params change                   |
+| Field                      | Type                    | Description                                                                  |
+| -------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| `isReady`                  | `boolean`               | `true` after connected + server ack. Multi-tab safe. `false` on disconnect   |
+| `streamState`              | `StreamState \| null`   | Server stream state: `"connected"`, `"throttled"`, `"pending"`, `"disconnected"`, or `"connection_timeout"`. `null` until the first `stream_status` message |
+| `suggestions`              | `Suggestion[]`          | AI suggestions, oldest first, capped at 50                                   |
+| `transcripts`              | `TranscriptLine[]`      | Live transcript lines, ordered by start time                                 |
+| `sentiment`                | `Sentiment \| null`     | Latest sentiment reading                                                     |
+| `lastError`                | `Error \| null`         | Most recent error                                                            |
+| `connect()`                | `() => void`            | Manually open the connection                                                 |
+| `disconnect()`             | `() => void`            | Manually close the connection                                                |
+| `setParams()`              | `(patch) => void`       | Merge params; reconnects if connection params change                         |
 
 ---
 
 ### TypeScript Types
 
 ```ts
+type StreamState = "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout";
+
 type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "error";
 
 interface Suggestion {
   id: string;
-  text: string;
+  value: string;
   timestamp: number;
 }
 
 interface TranscriptLine {
   id: string;
-  text: string;
+  value: string;
   startTime: number;
   endTime: number;
   isFinal: boolean;
@@ -309,6 +319,29 @@ When `wssBaseUrl` is provided it overrides the host + path portion:
 ```
 wss://<wssBaseUrl>?[customParam1=value1&customParam2=value2&...]
 ```
+
+### Message flow
+
+1. Client opens WebSocket, sends `{ "type": "auth", "access_token": "..." }`
+2. Server responds with `{ "type": "ack", "config": {...}, "events": [...] }` — triggers `isReady`
+3. Server sends `stream_status` messages whenever the stream state changes:
+
+```json
+{
+  "type": "stream_status",
+  "config": { /* bot config, populated on connected, null otherwise */ },
+  "events": [ /* accumulated events since last message, usually [] */ ],
+  "stream_state": "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout"
+}
+```
+
+| `stream_state`       | Meaning                                                   |
+| -------------------- | --------------------------------------------------------- |
+| `connected`          | Stream is active — suggestions, transcript, and sentiment flow normally |
+| `throttled`          | Capacity full — AI Assist cannot join this call; available on the next call |
+| `pending`            | Stream is pending — waiting for a definitive state |
+| `disconnected`       | Stream ended or dropped                                   |
+| `connection_timeout` | Connection timeout occurred                               |
 
 ### Reconnection
 

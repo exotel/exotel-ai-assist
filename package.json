@@ -1,6 +1,6 @@
 {
   "name": "@exotel-npm-dev/exotel-ai-assist",
-  "version": "1.1.5",
+  "version": "1.2.6",
   "description": "AI-powered real-time suggestions, transcript, and sentiment for agent calls",
   "license": "Apache-2.0",
   "main": "dist/index.js",
@@ -34,14 +34,18 @@
   },
   "files": [
     "dist",
+    "src",
     "react.js",
-    "controller.js"
+    "controller.js",
+    "tsconfig.json",
+    "rollup.config.mjs"
   ],
   "scripts": {
     "build": "tsc --emitDeclarationOnly && NODE_ENV=production rollup --config rollup.config.mjs",
     "dev": "rollup --config rollup.config.mjs --watch",
     "clean": "rm -rf dist",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

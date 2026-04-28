@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ExotelAIAssistController } from "../controller";
-import { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, BotConfig, ConnectionStatus } from "../types";
+import { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, BotConfig, StreamState } from "../types";
 import { Utils } from "../utils";
 
 const MAX_SUGGESTIONS = 50;
 
 export interface UseExotelAIAssistReturn {
-  status: ConnectionStatus;
   /**
    * `true` once the WebSocket connection is established and the server has
    * acknowledged it.  In multi-tab scenarios where this tab joins an
@@ -14,6 +13,14 @@ export interface UseExotelAIAssistReturn {
    * Resets to `false` on disconnect.
    */
   isReady: boolean;
+  /**
+   * Server-reported stream state from `stream_status` messages.
+   * `null` until the first `stream_status` is received.
+   * - `"connected"`    – stream is active and healthy
+   * - `"throttled"`    – capacity full; bot cannot join this call
+   * - `"disconnected"` – stream ended or dropped
+   */
+  streamState: StreamState | null;
   /** AI suggestions, oldest first, capped at 50. */
   suggestions: Suggestion[];
   /** Live transcript lines, ordered by start time. */
@@ -34,8 +41,8 @@ export interface UseExotelAIAssistInternalReturn extends UseExotelAIAssistReturn
 export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssistInternalReturn {
   const controllerRef = useRef<ExotelAIAssistController | null>(null);
 
-  const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [isReady, setIsReady] = useState(false);
+  const [streamState, setStreamState] = useState<StreamState | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [transcripts, setTranscripts] = useState<TranscriptLine[]>([]);
   const [sentiment, setSentiment] = useState<Sentiment | null>(null);
@@ -44,8 +51,8 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const paramHash = Utils.hash(params)
 
   useEffect(() => {
-    setStatus("idle");
     setIsReady(false);
+    setStreamState(null);
     setSuggestions([]);
     setTranscripts([]);
     setSentiment(null);
@@ -55,8 +62,8 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     const ctrl = new ExotelAIAssistController(params);
     controllerRef.current = ctrl;
 
-    ctrl.on("statusChange", setStatus);
     ctrl.on("onReady", setIsReady);
+    ctrl.on("streamState", setStreamState);
     ctrl.on("botConfig", setBotConfig);
     ctrl.on("suggestion", (s) => setSuggestions((prev) => [...prev, s].slice(-MAX_SUGGESTIONS)));
     ctrl.on("sentiment", setSentiment);
@@ -82,5 +89,5 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const disconnect = useCallback(() => controllerRef.current?.disconnect(), []);
   const setParams = useCallback((patch: Partial<ExotelAIAssistParams>) => controllerRef.current?.setParams(patch), []);
 
-  return { status, isReady, suggestions, transcripts, sentiment, botConfig, lastError, connect, disconnect, setParams };
+  return { isReady, streamState, suggestions, transcripts, sentiment, botConfig, lastError, connect, disconnect, setParams };
 }
