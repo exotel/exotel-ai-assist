@@ -224,7 +224,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     }
 
     if (msgType === "ack") {
-      this.transport?.markAcknowledged();
+      this.transport?.markAcknowledged(raw);
       const state = (parsed as WssResponse).stream_state;
       if (state) this._handleStreamStatus(state);
     }
