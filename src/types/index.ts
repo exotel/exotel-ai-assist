@@ -137,6 +137,8 @@ export interface ControllerEvents {
   statusChange: (status: ConnectionStatus) => void;
   /** Fires whenever the server sends a `stream_status` message. */
   streamState: (state: StreamState) => void;
+  /** Fires when another tab updates suggestion feedback, for cross-tab UI sync. */
+  suggestionFeedbackSync: (data: { sequence: number; feedbackType: "good" | "bad" | null; badFeedbackReason: string | null }) => void;
   error: (err: Error) => void;
   raw: (data: unknown) => void;
 }
@@ -146,4 +148,5 @@ export type WorkerInboundMessage =
   | { type: "CONNECTED" }
   | { type: "ACKNOWLEDGED" }
   | { type: "DISCONNECTED"; code?: number }
-  | { type: "ERROR"; message: string };
+  | { type: "ERROR"; message: string }
+  | { type: "FEEDBACK_SYNC"; sequence: number; feedbackType: "good" | "bad" | null; badFeedbackReason: string | null };

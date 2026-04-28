@@ -4,7 +4,7 @@ type TransportMessageHandler = (msg: WorkerInboundMessage) => void;
 
 // Internal-only message used for the leader-sync handshake.
 // Never forwarded to the controller.
-type InternalMessage = WorkerInboundMessage | { type: "JOIN" };
+type InternalMessage = WorkerInboundMessage | { type: "JOIN" } | { type: "SEND"; payload: string };
 
 export interface ITransport {
   connect(url: string, authToken: string): void;
@@ -14,6 +14,8 @@ export interface ITransport {
   /** Store the raw ack payload so follower tabs joining later receive it as a
    *  MESSAGE replay instead of a bare ACKNOWLEDGED signal. */
   markAcknowledged(rawAckPayload: string): void;
+  /** Broadcast a feedback state change to other tabs for UI sync. */
+  broadcastFeedbackSync(sequence: number, feedbackType: "good" | "bad" | null, badFeedbackReason: string | null): void;
   destroy(): void;
 }
 
@@ -48,11 +50,18 @@ export class BroadcastChannelTransport implements ITransport {
           this.channel.postMessage({ type: "CONNECTED" } satisfies WorkerInboundMessage);
           this.channel.postMessage({ type: "MESSAGE", payload: this.ackPayload } satisfies WorkerInboundMessage);
         }
+        if (data.type === "SEND" && this.socket?.readyState === WebSocket.OPEN) {
+          this.socket.send((data as { type: "SEND"; payload: string }).payload);
+        }
+        if (data.type === "FEEDBACK_SYNC") {
+          this.handler?.(data as WorkerInboundMessage);
+        }
         return;
       }
 
-      // Follower: forward every message except JOIN to the controller handler.
-      if (data.type !== "JOIN") {
+      // Follower: forward server messages to the controller handler.
+      // JOIN and SEND are internal transport messages, not controller messages.
+      if (data.type !== "JOIN" && data.type !== "SEND") {
         this.handler?.(data as WorkerInboundMessage);
       }
     };
@@ -154,8 +163,12 @@ export class BroadcastChannelTransport implements ITransport {
   }
 
   send(payload: string): void {
-    if (this.isLeader && this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(payload);
+    if (this.isLeader) {
+      if (this.socket?.readyState === WebSocket.OPEN) {
+        this.socket.send(payload);
+      }
+    } else {
+      this.channel.postMessage({ type: "SEND", payload } satisfies InternalMessage);
     }
   }
 
@@ -165,6 +178,10 @@ export class BroadcastChannelTransport implements ITransport {
 
   markAcknowledged(rawAckPayload: string): void {
     this.ackPayload = rawAckPayload;
+  }
+
+  broadcastFeedbackSync(sequence: number, feedbackType: "good" | "bad" | null, badFeedbackReason: string | null): void {
+    this.channel.postMessage({ type: "FEEDBACK_SYNC", sequence, feedbackType, badFeedbackReason } satisfies WorkerInboundMessage);
   }
 
   destroy(): void {
