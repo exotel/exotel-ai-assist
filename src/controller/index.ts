@@ -290,7 +290,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
     this.emit("streamState", state);
     if (state === "connected" || state === "throttled") {
       this._fireReady();
-    } else if ((state === "connection_timeout" || state === "disconnected") && this.readyFired) {
+    } else if (this.readyFired) {
       this.readyFired = false;
       this.emit("onReady", false);
     }
