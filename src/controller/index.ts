@@ -279,8 +279,8 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
           value: event.value.text,
           timestamp: now,
           sequence: event.value.sequence,
-          feedbackType: null,
-          badFeedbackReason: null,
+          feedbackType: event.value?.feedback_type ?? null,
+          badFeedbackReason: event.value?.bad_feedback_reason ?? null,
         };
         this.emit("suggestion", suggestion);
       }

@@ -80,6 +80,8 @@ interface TranscriptMessage {
 export interface SuggestionValue {
   text: string;
   sequence: number;
+  feedback_type?: "good" | "bad" | null;
+  bad_feedback_reason?: string | null;
 }
 export interface SuggestionFeedbackMessage {
   type: "suggestion_feedback";
