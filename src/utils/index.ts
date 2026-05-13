@@ -20,7 +20,7 @@ export class Utils {
    * @returns The formatted time string.
    */
   static formatTimestamp(ms: number): string {
-    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   }
 
   /**
