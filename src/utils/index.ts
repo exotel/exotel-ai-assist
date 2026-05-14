@@ -71,15 +71,4 @@ export class Utils {
     [...pairs, ...extra].forEach(([k, v]) => query.append(k, v));
     return query.toString();
   }
-
-  /**
-   * Returns a unique ID string.
-   *
-   * If the browser supports `crypto.randomUUID`, it uses that. Otherwise, it
-   * falls back to a simple timestamp-based ID.
-   * @returns A unique ID string.
-   */
-  static getUniqueId(): string {
-    return crypto.randomUUID();
-  }
 }
