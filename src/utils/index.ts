@@ -20,7 +20,7 @@ export class Utils {
    * @returns The formatted time string.
    */
   static formatTimestamp(ms: number): string {
-    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   }
 
   /**
@@ -70,19 +70,5 @@ export class Utils {
     const query = new URLSearchParams();
     [...pairs, ...extra].forEach(([k, v]) => query.append(k, v));
     return query.toString();
-  }
-
-  /**
-   * Returns a unique ID string.
-   *
-   * If the browser supports `crypto.randomUUID`, it uses that. Otherwise, it
-   * falls back to a simple timestamp-based ID.
-   * @returns A unique ID string.
-   */
-  static getUniqueId(): string {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-      return crypto.randomUUID();
-    }
-    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 }
