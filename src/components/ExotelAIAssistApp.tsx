@@ -10,6 +10,7 @@ import "../styles/index.css";
 import { Header } from "./key-components/Header";
 import { SuggestionsTab } from "./key-components/SuggestionTab";
 import { TranscriptTab } from "./key-components/TranscriptTab";
+import { TransferSummaryCard } from "./key-components/TransferSummaryCard";
 import { EmptyState } from "./EmptyState";
 
 export interface ExotelAIAssistProps extends ExotelAIAssistParams {
@@ -19,7 +20,16 @@ export interface ExotelAIAssistProps extends ExotelAIAssistParams {
 }
 
 export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssistProps): JSX.Element {
-  const { streamState, isReady, suggestions, transcripts, sentiment, botConfig, sendSuggestionFeedback } = useExotelAIAssist(params as ExotelAIAssistParams);
+  const {
+    streamState,
+    isReady,
+    suggestions,
+    transcripts,
+    sentiment,
+    transferSummary,
+    botConfig,
+    sendSuggestionFeedback,
+  } = useExotelAIAssist(params as ExotelAIAssistParams);
 
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
@@ -54,6 +64,7 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
           <div className={`oa-panel${className ? ` ${className}` : ""}`}>
             <div style={{ flex: 1, width: "100%", minHeight: 0, padding: "0 16px", display: "flex", flexDirection: "column" }}>
               <Header sentiment={sentiment} botConfig={botConfig} />
+              {transferSummary ? <TransferSummaryCard data={transferSummary} /> : null}
 
               {streamState !== "throttled" ? (
                 <Tabs.Root defaultValue="suggestions" className="oa-tabs" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
