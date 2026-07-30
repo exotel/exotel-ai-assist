@@ -6,6 +6,7 @@ import {
   Suggestion,
   TranscriptLine,
   Sentiment,
+  TransferSummary,
   WssEvent,
   InitialHandshakeResponse,
   WssResponse,
@@ -291,6 +292,30 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
           timestamp: now,
         };
         this.emit("sentiment", sentiment);
+      }
+
+      if (event.event_type === "transfer_summary" && event.value) {
+        const summary =
+          typeof event.value.summary === "string" ? event.value.summary.trim() : "";
+        if (!summary) continue;
+
+        const rawSentiment = event.value.sentiment;
+        const sentimentLabel =
+          rawSentiment === undefined || rawSentiment === null ? null : String(rawSentiment);
+
+        const transferSummary: TransferSummary = {
+          summary,
+          sentiment: sentimentLabel,
+        };
+        this.emit("transferSummary", transferSummary);
+
+        if (sentimentLabel) {
+          const sentiment: Sentiment = {
+            label: sentimentLabel.toLowerCase() as Sentiment["label"],
+            timestamp: now,
+          };
+          this.emit("sentiment", sentiment);
+        }
       }
     }
   }
