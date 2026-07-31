@@ -38,7 +38,9 @@ export function TransferSummaryCard({ data }: TransferSummaryCardProps): JSX.Ele
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>Summary</span>
+          <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>
+            Transfer Summary
+          </span>
           {sentiment ? (
             <span className={badgeClass}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -53,12 +55,14 @@ export function TransferSummaryCard({ data }: TransferSummaryCardProps): JSX.Ele
       {expanded ? (
         <div className="oa-transfer-summary-body" style={{ marginTop: 8 }}>
           <p
+            className="oa-transfer-summary-text"
             style={{
               color: "#374151",
               whiteSpace: "pre-wrap",
               margin: 0,
               lineHeight: 1.5,
               fontSize: 14,
+              textAlign: "left",
             }}
           >
             {data.summary}

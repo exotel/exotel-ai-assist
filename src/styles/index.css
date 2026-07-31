@@ -437,6 +437,11 @@
   user-select: none;
 }
 
+.oa-transfer-summary-body,
+.oa-transfer-summary-text {
+  text-align: left;
+}
+
 .oa-transfer-summary-badge {
   display: inline-flex;
   align-items: center;
