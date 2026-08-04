@@ -6,6 +6,17 @@ export interface TransferSummaryCardProps {
   data: TransferSummary;
 }
 
+/** Renders `**bold**` markdown spans; leaves the rest as plain text (keeps bullets via pre-wrap). */
+function renderSummaryWithBold(summary: string): React.ReactNode[] {
+  const parts = summary.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+}
+
 export function TransferSummaryCard({ data }: TransferSummaryCardProps): JSX.Element {
   const [expanded, setExpanded] = useState(true);
   const sentiment = data.sentiment ?? "";
@@ -65,7 +76,7 @@ export function TransferSummaryCard({ data }: TransferSummaryCardProps): JSX.Ele
               textAlign: "left",
             }}
           >
-            {data.summary}
+            {renderSummaryWithBold(data.summary)}
           </p>
         </div>
       ) : null}
