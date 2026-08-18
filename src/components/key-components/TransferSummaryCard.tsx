@@ -6,14 +6,35 @@ export interface TransferSummaryCardProps {
   data: TransferSummary;
 }
 
-/** Renders `**bold**` markdown spans; leaves the rest as plain text (keeps bullets via pre-wrap). */
-function renderSummaryWithBold(summary: string): React.ReactNode[] {
-  const parts = summary.split(/(\*\*[^*]+\*\*)/g);
+/** Renders `**bold**` markdown spans; leaves the rest as plain text. */
+function renderSummaryWithBold(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
       return <strong key={i}>{part.slice(2, -2)}</strong>;
     }
     return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+}
+
+/** Normalizes inline bullet markers into separate left-aligned lines with bold support. */
+function formatSummaryLines(summary: string): React.ReactNode[] {
+  const normalizedSummary = summary.replace(/\s+([*-•])\s+/g, "\n$1 ");
+  const lines = normalizedSummary
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines.map((line, index) => {
+    const isBulletLine = /^[-*•]\s+/.test(line);
+    const lineContent = isBulletLine ? line.replace(/^[-*•]\s+/, "") : line;
+
+    return (
+      <span key={`line-${index}`} style={{ display: "block" }}>
+        {isBulletLine ? "• " : ""}
+        {renderSummaryWithBold(lineContent)}
+      </span>
+    );
   });
 }
 
@@ -65,19 +86,18 @@ export function TransferSummaryCard({ data }: TransferSummaryCardProps): JSX.Ele
       </div>
       {expanded ? (
         <div className="oa-transfer-summary-body" style={{ marginTop: 8 }}>
-          <p
+          <div
             className="oa-transfer-summary-text"
             style={{
               color: "#374151",
-              whiteSpace: "pre-wrap",
               margin: 0,
               lineHeight: 1.5,
               fontSize: 14,
               textAlign: "left",
             }}
           >
-            {renderSummaryWithBold(data.summary)}
-          </p>
+            {formatSummaryLines(data.summary ?? "")}
+          </div>
         </div>
       ) : null}
     </div>
