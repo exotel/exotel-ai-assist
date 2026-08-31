@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1] — 2026-08-31
+
+### Changed
+
+- Agent quota copy now asks the agent to contact their admin for an upgrade
+- Default conversation-events WebSocket is production `ai-assist.in.exotel.com`
+
 ## [1.5.1-uat] — 2026-08-31
 
 ### Changed
