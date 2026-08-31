@@ -17,6 +17,16 @@ import {
 import { ITransport, createTransport } from "../transport";
 import { Utils } from "../utils";
 
+const UNAVAILABLE_STREAM_STATES: ReadonlySet<StreamState> = new Set([
+  "throttled",
+  "quota_exhausted",
+  "agent_quota_exhausted",
+]);
+
+function isUnavailableStreamState(state: StreamState | null): boolean {
+  return state !== null && UNAVAILABLE_STREAM_STATES.has(state);
+}
+
 export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   private params: ExotelAIAssistParams;
   private transport: ITransport | null = null;
@@ -57,7 +67,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   disconnect(): void {
     this._clearReconnectTimer();
     this.transport?.disconnect();
-    if (this.readyFired && this._streamState !== "throttled") {
+    if (this.readyFired && !isUnavailableStreamState(this._streamState)) {
       this.readyFired = false;
       this.emit("onReady", false);
     }
@@ -145,8 +155,8 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
       case "DISCONNECTED":
         if (this.connectionEstablished) {
-          const wasThrottled = this._streamState === "throttled";
-          if (this.readyFired && !wasThrottled) {
+          const wasUnavailable = isUnavailableStreamState(this._streamState);
+          if (this.readyFired && !wasUnavailable) {
             this.emit("onReady", false);
           }
           this.connectionEstablished = false;
@@ -323,7 +333,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   private _handleStreamStatus(state: StreamState): void {
     this._streamState = state;
     this.emit("streamState", state);
-    if (state === "connected" || state === "throttled") {
+    if (state === "connected" || isUnavailableStreamState(state)) {
       this._fireReady();
     } else if (this.readyFired) {
       this.readyFired = false;

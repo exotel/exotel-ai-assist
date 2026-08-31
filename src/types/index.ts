@@ -42,11 +42,20 @@ export type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnect
 
 /**
  * Server-side stream state, received via `stream_status` messages.
- * - `connected`    – stream is active and healthy
- * - `throttled`    – capacity full; the bot cannot join this call
- * - `pending` – stream is pending
+ * - `connected`              – stream is active and healthy
+ * - `throttled`              – capacity full; the bot cannot join this call
+ * - `quota_exhausted`        – the tenant's plan quota is exhausted
+ * - `agent_quota_exhausted`  – the current agent's call quota is exhausted
+ * - `pending`                – stream is pending
  */
-export type StreamState = "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout";
+export type StreamState =
+  | "connected"
+  | "throttled"
+  | "quota_exhausted"
+  | "agent_quota_exhausted"
+  | "pending"
+  | "disconnected"
+  | "connection_timeout";
 
 // ---------------------------------------------------------------------------
 // Internal-only backend response types

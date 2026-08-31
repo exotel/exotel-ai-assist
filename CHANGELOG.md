@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Consume `quota_exhausted` and `agent_quota_exhausted` stream states with distinct unavailable copy
+
 ## [1.4.0] — 2026-08-04
 
 ### Added

@@ -24,9 +24,11 @@ export interface UseExotelAIAssistReturn {
   /**
    * Server-reported stream state from `stream_status` messages.
    * `null` until the first `stream_status` is received.
-   * - `"connected"`    – stream is active and healthy
-   * - `"throttled"`    – capacity full; bot cannot join this call
-   * - `"disconnected"` – stream ended or dropped
+   * - `"connected"`             – stream is active and healthy
+   * - `"throttled"`             – capacity full; bot cannot join this call
+   * - `"quota_exhausted"`       – tenant plan quota is exhausted
+   * - `"agent_quota_exhausted"` – current agent's call quota is exhausted
+   * - `"disconnected"`          – stream ended or dropped
    */
   streamState: StreamState | null;
   /** AI suggestions, oldest first, capped at 50. */
