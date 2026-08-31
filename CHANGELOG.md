@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.0-uat] — 2026-08-31
+
+UAT build: default conversation-events WebSocket is `aiassist-uat.in.exotel.com`.
+
 ## [1.5.0] — 2026-08-31
 
 ### Added
