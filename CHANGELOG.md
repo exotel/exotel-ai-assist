@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.5.1-uat] — 2026-08-31
+
+### Changed
+
+- Agent quota copy now asks the agent to contact their admin for an upgrade
+
 ## [1.5.0-uat] — 2026-08-31
 
 UAT build: default conversation-events WebSocket is `aiassist-uat.in.exotel.com`.

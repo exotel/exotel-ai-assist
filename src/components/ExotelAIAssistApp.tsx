@@ -63,7 +63,7 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
           title="Your AI Assist limit is reached"
           subtitle="Contact your administrator to raise your call allowance."
           showWarningBanner={true}
-          warningBannerMessage="You've reached your personal AI Assist call limit."
+          warningBannerMessage="You've reached your personal AI Assist call limit. Please contact your admin for an upgrade."
         />
       );
     }
