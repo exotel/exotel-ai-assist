@@ -42,11 +42,20 @@ export type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnect
 
 /**
  * Server-side stream state, received via `stream_status` messages.
- * - `connected`    – stream is active and healthy
- * - `throttled`    – capacity full; the bot cannot join this call
- * - `pending` – stream is pending
+ * - `connected`              – stream is active and healthy
+ * - `throttled`              – capacity full; the bot cannot join this call
+ * - `quota_exhausted`        – the tenant's plan quota is exhausted
+ * - `agent_quota_exhausted`  – the current agent's call quota is exhausted
+ * - `pending`                – stream is pending
  */
-export type StreamState = "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout";
+export type StreamState =
+  | "connected"
+  | "throttled"
+  | "quota_exhausted"
+  | "agent_quota_exhausted"
+  | "pending"
+  | "disconnected"
+  | "connection_timeout";
 
 // ---------------------------------------------------------------------------
 // Internal-only backend response types
@@ -105,7 +114,24 @@ interface WssSuggestionEvent {
   value: SuggestionValue;
 }
 
-export type WssEvent = WssTranscriptEvent | WssSentimentEvent | WssSuggestionEvent;
+/** Value payload for handover / warm-transfer summary events. */
+export interface TransferSummaryValue {
+  summary?: string;
+  sentiment?: string | number | null;
+}
+
+/** Parsed transfer summary shown above the panel tabs. */
+export interface TransferSummary {
+  summary: string;
+  sentiment: string | null;
+}
+
+interface WssTransferSummaryEvent {
+  event_type: "transfer_summary";
+  value: TransferSummaryValue;
+}
+
+export type WssEvent = WssTranscriptEvent | WssSentimentEvent | WssSuggestionEvent | WssTransferSummaryEvent;
 
 export interface InitialHandshakeResponse {
   type: string;
@@ -124,6 +150,8 @@ export interface ControllerEvents {
   suggestion: (data: Suggestion) => void;
   transcript: (lines: TranscriptLine[]) => void;
   sentiment: (data: Sentiment) => void;
+  /** Warm-transfer / handover summary pushed at stream-setup. */
+  transferSummary: (data: TransferSummary) => void;
   /** Internal: bot feature-flag config. Consumed by the UI component only. */
   botConfig: (config: BotConfig) => void;
   /**

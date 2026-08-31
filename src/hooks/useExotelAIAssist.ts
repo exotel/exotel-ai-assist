@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ExotelAIAssistController } from "../controller";
-import { ExotelAIAssistParams, Suggestion, TranscriptLine, Sentiment, BotConfig, StreamState } from "../types";
+import {
+  ExotelAIAssistParams,
+  Suggestion,
+  TranscriptLine,
+  Sentiment,
+  TransferSummary,
+  BotConfig,
+  StreamState,
+} from "../types";
 import { Utils } from "../utils";
 
 const MAX_SUGGESTIONS = 50;
@@ -16,9 +24,11 @@ export interface UseExotelAIAssistReturn {
   /**
    * Server-reported stream state from `stream_status` messages.
    * `null` until the first `stream_status` is received.
-   * - `"connected"`    – stream is active and healthy
-   * - `"throttled"`    – capacity full; bot cannot join this call
-   * - `"disconnected"` – stream ended or dropped
+   * - `"connected"`             – stream is active and healthy
+   * - `"throttled"`             – capacity full; bot cannot join this call
+   * - `"quota_exhausted"`       – tenant plan quota is exhausted
+   * - `"agent_quota_exhausted"` – current agent's call quota is exhausted
+   * - `"disconnected"`          – stream ended or dropped
    */
   streamState: StreamState | null;
   /** AI suggestions, oldest first, capped at 50. */
@@ -27,6 +37,8 @@ export interface UseExotelAIAssistReturn {
   transcripts: TranscriptLine[];
   /** Latest sentiment reading, or null before the first event. */
   sentiment: Sentiment | null;
+  /** Warm-transfer summary from handover-context cache, if present. */
+  transferSummary: TransferSummary | null;
   lastError: Error | null;
   connect: () => void;
   disconnect: () => void;
@@ -47,6 +59,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [transcripts, setTranscripts] = useState<TranscriptLine[]>([]);
   const [sentiment, setSentiment] = useState<Sentiment | null>(null);
+  const [transferSummary, setTransferSummary] = useState<TransferSummary | null>(null);
   const [botConfig, setBotConfig] = useState<BotConfig | null>(null);
   const [lastError, setLastError] = useState<Error | null>(null);
   const paramHash = Utils.hash(params);
@@ -57,6 +70,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     setSuggestions([]);
     setTranscripts([]);
     setSentiment(null);
+    setTransferSummary(null);
     setBotConfig(null);
     setLastError(null);
 
@@ -69,6 +83,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
         setSuggestions([]);
         setTranscripts([]);
         setSentiment(null);
+        setTransferSummary(null);
       }
     });
     ctrl.on("streamState", setStreamState);
@@ -80,6 +95,7 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
       }),
     );
     ctrl.on("sentiment", setSentiment);
+    ctrl.on("transferSummary", setTransferSummary);
     ctrl.on("transcript", (lines) =>
       setTranscripts((prev) => {
         const map = new Map(prev.map((l) => [l.id, l]));
@@ -115,5 +131,18 @@ export function useExotelAIAssist(params: ExotelAIAssistParams): UseExotelAIAssi
     return sent;
   }, []);
 
-  return { streamState, isReady, suggestions, transcripts, sentiment, botConfig, lastError, connect, disconnect, setParams, sendSuggestionFeedback };
+  return {
+    streamState,
+    isReady,
+    suggestions,
+    transcripts,
+    sentiment,
+    transferSummary,
+    botConfig,
+    lastError,
+    connect,
+    disconnect,
+    setParams,
+    sendSuggestionFeedback,
+  };
 }

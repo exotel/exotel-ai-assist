@@ -10,6 +10,7 @@ import "../styles/index.css";
 import { Header } from "./key-components/Header";
 import { SuggestionsTab } from "./key-components/SuggestionTab";
 import { TranscriptTab } from "./key-components/TranscriptTab";
+import { TransferSummaryCard } from "./key-components/TransferSummaryCard";
 import { EmptyState } from "./EmptyState";
 
 export interface ExotelAIAssistProps extends ExotelAIAssistParams {
@@ -18,8 +19,23 @@ export interface ExotelAIAssistProps extends ExotelAIAssistParams {
   onReady?: (ready: boolean) => void;
 }
 
+const UNAVAILABLE_STREAM_STATES = new Set([
+  "throttled",
+  "quota_exhausted",
+  "agent_quota_exhausted",
+]);
+
 export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssistProps): JSX.Element {
-  const { streamState, isReady, suggestions, transcripts, sentiment, botConfig, sendSuggestionFeedback } = useExotelAIAssist(params as ExotelAIAssistParams);
+  const {
+    streamState,
+    isReady,
+    suggestions,
+    transcripts,
+    sentiment,
+    transferSummary,
+    botConfig,
+    sendSuggestionFeedback,
+  } = useExotelAIAssist(params as ExotelAIAssistParams);
 
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
@@ -31,6 +47,26 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
   const connected = streamState === "connected";
 
   function renderProperEmptyContent(): JSX.Element | null {
+    if (streamState === "quota_exhausted") {
+      return (
+        <EmptyState
+          title="AI Assist Unavailable"
+          subtitle="Contact your administrator to restore AI Assist."
+          showWarningBanner={true}
+          warningBannerMessage="Your organisation's AI Assist quota is exhausted. Ask your admin to renew the plan."
+        />
+      );
+    }
+    if (streamState === "agent_quota_exhausted") {
+      return (
+        <EmptyState
+          title="Your AI Assist limit is reached"
+          subtitle="Contact your administrator to raise your call allowance."
+          showWarningBanner={true}
+          warningBannerMessage="You've reached your personal AI Assist call limit. Please contact your admin for an upgrade."
+        />
+      );
+    }
     if (streamState === "throttled") {
       return (
         <EmptyState
@@ -54,8 +90,9 @@ export function ExotelAIAssist({ className, onReady, ...params }: ExotelAIAssist
           <div className={`oa-panel${className ? ` ${className}` : ""}`}>
             <div style={{ flex: 1, width: "100%", minHeight: 0, padding: "0 16px", display: "flex", flexDirection: "column" }}>
               <Header sentiment={sentiment} botConfig={botConfig} />
+              {transferSummary ? <TransferSummaryCard data={transferSummary} /> : null}
 
-              {streamState !== "throttled" ? (
+              {!streamState || !UNAVAILABLE_STREAM_STATES.has(streamState) ? (
                 <Tabs.Root defaultValue="suggestions" className="oa-tabs" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <Tabs.List className="oa-tabs-list">
                     <Tabs.Trigger value="suggestions" className="oa-tabs-trigger">

@@ -6,6 +6,7 @@ import {
   Suggestion,
   TranscriptLine,
   Sentiment,
+  TransferSummary,
   WssEvent,
   InitialHandshakeResponse,
   WssResponse,
@@ -15,6 +16,16 @@ import {
 } from "../types";
 import { ITransport, createTransport } from "../transport";
 import { Utils } from "../utils";
+
+const UNAVAILABLE_STREAM_STATES: ReadonlySet<StreamState> = new Set([
+  "throttled",
+  "quota_exhausted",
+  "agent_quota_exhausted",
+]);
+
+function isUnavailableStreamState(state: StreamState | null): boolean {
+  return state !== null && UNAVAILABLE_STREAM_STATES.has(state);
+}
 
 export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   private params: ExotelAIAssistParams;
@@ -56,7 +67,7 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
   disconnect(): void {
     this._clearReconnectTimer();
     this.transport?.disconnect();
-    if (this.readyFired && this._streamState !== "throttled") {
+    if (this.readyFired && !isUnavailableStreamState(this._streamState)) {
       this.readyFired = false;
       this.emit("onReady", false);
     }
@@ -144,8 +155,8 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
 
       case "DISCONNECTED":
         if (this.connectionEstablished) {
-          const wasThrottled = this._streamState === "throttled";
-          if (this.readyFired && !wasThrottled) {
+          const wasUnavailable = isUnavailableStreamState(this._streamState);
+          if (this.readyFired && !wasUnavailable) {
             this.emit("onReady", false);
           }
           this.connectionEstablished = false;
@@ -292,13 +303,37 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
         };
         this.emit("sentiment", sentiment);
       }
+
+      if (event.event_type === "transfer_summary" && event.value) {
+        const summary =
+          typeof event.value.summary === "string" ? event.value.summary.trim() : "";
+        if (!summary) continue;
+
+        const rawSentiment = event.value.sentiment;
+        const sentimentLabel =
+          rawSentiment === undefined || rawSentiment === null ? null : String(rawSentiment);
+
+        const transferSummary: TransferSummary = {
+          summary,
+          sentiment: sentimentLabel,
+        };
+        this.emit("transferSummary", transferSummary);
+
+        if (sentimentLabel) {
+          const sentiment: Sentiment = {
+            label: sentimentLabel.toLowerCase() as Sentiment["label"],
+            timestamp: now,
+          };
+          this.emit("sentiment", sentiment);
+        }
+      }
     }
   }
 
   private _handleStreamStatus(state: StreamState): void {
     this._streamState = state;
     this.emit("streamState", state);
-    if (state === "connected" || state === "throttled") {
+    if (state === "connected" || isUnavailableStreamState(state)) {
       this._fireReady();
     } else if (this.readyFired) {
       this.readyFired = false;

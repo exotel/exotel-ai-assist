@@ -121,6 +121,8 @@ function MyCustomUI({ call_sid }: { call_sid: string }) {
 
   if (!isReady) return <p>Connecting…</p>;
 
+  if (streamState === "quota_exhausted") return <p>Your organisation's AI Assist quota is exhausted.</p>;
+  if (streamState === "agent_quota_exhausted") return <p>Your personal AI Assist call limit is reached.</p>;
   if (streamState === "throttled") return <p>AI Assist is at capacity — available on your next call.</p>;
   if (streamState === "disconnected") return <p>AI Assist disconnected.</p>;
   if (streamState === "connection_timeout") return <p>Connection timed out.</p>;
@@ -189,7 +191,7 @@ ctrl.on("suggestion", (s) => console.log("Suggestion:", s));
 ctrl.on("transcript", (t) => console.log("Transcript:", t));
 ctrl.on("streamState", (state) => {
   console.log("Stream state:", state);
-  // state: "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout"
+  // Quota blocks are reported as "quota_exhausted" or "agent_quota_exhausted".
 });
 ctrl.on("error", (err) => console.error("Error:", err));
 
@@ -256,7 +258,7 @@ Extends `EventEmitter`.
 | `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)                                                                           |
 | `transcript`   | `TranscriptLine[]` | Live transcript update                                                                                          |
 | `sentiment`    | `Sentiment`        | Sentiment label update                                                                                          |
-| `streamState`  | `StreamState`      | Server stream state change (`connected`, `throttled`, `pending`, `disconnected`, `connection_timeout`)          |
+| `streamState`  | `StreamState`      | Server stream state change, including tenant and per-agent quota exhaustion                                     |
 | `onCallStart`  | —                  | Connection opened                                                                                               |
 | `onCallEnd`    | —                  | Connection closed                                                                                               |
 | `statusChange` | `ConnectionStatus` | WebSocket-level status transition (internal)                                                                    |
@@ -270,7 +272,7 @@ Extends `EventEmitter`.
 | Field                      | Type                    | Description                                                                  |
 | -------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
 | `isReady`                  | `boolean`               | `true` after connected + server ack. Multi-tab safe. `false` on disconnect   |
-| `streamState`              | `StreamState \| null`   | Server stream state: `"connected"`, `"throttled"`, `"pending"`, `"disconnected"`, or `"connection_timeout"`. `null` until the first `stream_status` message |
+| `streamState`              | `StreamState \| null`   | Server stream state, including `"quota_exhausted"` and `"agent_quota_exhausted"`. `null` until the first stream-state message |
 | `suggestions`              | `Suggestion[]`          | AI suggestions, oldest first, capped at 50                                   |
 | `transcripts`              | `TranscriptLine[]`      | Live transcript lines, ordered by start time                                 |
 | `sentiment`                | `Sentiment \| null`     | Latest sentiment reading                                                     |
@@ -284,7 +286,14 @@ Extends `EventEmitter`.
 ### TypeScript Types
 
 ```ts
-type StreamState = "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout";
+type StreamState =
+  | "connected"
+  | "throttled"
+  | "quota_exhausted"
+  | "agent_quota_exhausted"
+  | "pending"
+  | "disconnected"
+  | "connection_timeout";
 
 type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "error";
 
@@ -331,7 +340,7 @@ wss://<wssBaseUrl>?[customParam1=value1&customParam2=value2&...]
   "type": "stream_status",
   "config": { /* bot config, populated on connected, null otherwise */ },
   "events": [ /* accumulated events since last message, usually [] */ ],
-  "stream_state": "connected" | "throttled" | "pending" | "disconnected" | "connection_timeout"
+  "stream_state": "connected" | "throttled" | "quota_exhausted" | "agent_quota_exhausted" | "pending" | "disconnected" | "connection_timeout"
 }
 ```
 
@@ -339,6 +348,8 @@ wss://<wssBaseUrl>?[customParam1=value1&customParam2=value2&...]
 | -------------------- | --------------------------------------------------------- |
 | `connected`          | Stream is active — suggestions, transcript, and sentiment flow normally |
 | `throttled`          | Capacity full — AI Assist cannot join this call; available on the next call |
+| `quota_exhausted`    | The organisation's AI Assist plan quota is exhausted |
+| `agent_quota_exhausted` | The current agent's AI Assist call allowance is exhausted |
 | `pending`            | Stream is pending — waiting for a definitive state |
 | `disconnected`       | Stream ended or dropped                                   |
 | `connection_timeout` | Connection timeout occurred                               |
