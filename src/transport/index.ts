@@ -109,12 +109,18 @@ export class BroadcastChannelTransport implements ITransport {
       this.socket.close(1000, "reconnecting");
     }
 
+    const connectStartedMs = performance.now();
     this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
       if (this._destroyed) return;
+      const initConnectMs = Math.max(0, Math.round(performance.now() - connectStartedMs));
       this.socketConnected = true;
       this.ackPayload = null;
+      // Browser ctor → onopen; Java stashes as panel_ws_connect_ms for first-turn E2E.
+      this.socket!.send(
+        JSON.stringify({ type: "connect_metrics", panel_ws_connect_ms: initConnectMs })
+      );
       this.socket!.send(JSON.stringify({ type: "auth", access_token: authToken }));
       const msg: WorkerInboundMessage = { type: "CONNECTED" };
       this.channel.postMessage(msg);

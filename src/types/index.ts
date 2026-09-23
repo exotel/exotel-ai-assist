@@ -90,6 +90,18 @@ export interface SuggestionFeedbackMessage {
   bad_feedback_reason: string | null;
 }
 
+/** Browser-measured WSS connect (ctor → onopen), sent once after open. */
+export interface PanelConnectMetricsMessage {
+  type: "connect_metrics";
+  panel_ws_connect_ms: number;
+}
+
+/** Client → server ACK for each live conversation event (UI ack latency). */
+export interface ConversationEventAckMessage {
+  ack: boolean;
+  event_type: string;
+}
+
 interface WssTranscriptEvent {
   event_type: "transcript";
   value: TranscriptMessage[];

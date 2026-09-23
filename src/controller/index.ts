@@ -11,6 +11,7 @@ import {
   WssResponse,
   WorkerInboundMessage,
   SuggestionFeedbackMessage,
+  ConversationEventAckMessage,
   StreamState,
 } from "../types";
 import { ITransport, createTransport } from "../transport";
@@ -233,7 +234,10 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
       return;
     }
 
-    if (msgType === "ack") {
+    // Initial handshake (type=ack) carries historical events — do not UI-ACK those.
+    const isHandshakeAck = msgType === "ack";
+
+    if (isHandshakeAck) {
       this.transport?.markAcknowledged(raw);
       const state = (parsed as WssResponse).stream_state;
       if (state) this._handleStreamStatus(state);
@@ -291,6 +295,18 @@ export class ExotelAIAssistController extends EventEmitter<ControllerEvents> {
           timestamp: now,
         };
         this.emit("sentiment", sentiment);
+      }
+    }
+
+    // Live conversation events only — Java measures UI ack latency per event_type.
+    if (!isHandshakeAck) {
+      for (const event of events) {
+        if (!event?.event_type) continue;
+        const ack: ConversationEventAckMessage = {
+          ack: true,
+          event_type: event.event_type,
+        };
+        this.transport?.send(JSON.stringify(ack));
       }
     }
   }
