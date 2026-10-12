@@ -253,7 +253,7 @@ Extends `EventEmitter`.
 | Event          | Payload            | Description                                                                                                     |
 | -------------- | ------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `onReady`      | `boolean`          | `true` when connected and server sends `ack`; `false` on disconnect. Multi-tab safe — works for follower tabs too |
-| `suggestion`   | `Suggestion`       | New AI suggestion (capped at last 50)                                                                           |
+| `suggestion`   | `Suggestion`       |Live suggestion                                                                                               |
 | `transcript`   | `TranscriptLine[]` | Live transcript update                                                                                          |
 | `sentiment`    | `Sentiment`        | Sentiment label update                                                                                          |
 | `streamState`  | `StreamState`      | Server stream state change (`connected`, `throttled`, `pending`, `disconnected`, `connection_timeout`)          |
@@ -271,7 +271,7 @@ Extends `EventEmitter`.
 | -------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
 | `isReady`                  | `boolean`               | `true` after connected + server ack. Multi-tab safe. `false` on disconnect   |
 | `streamState`              | `StreamState \| null`   | Server stream state: `"connected"`, `"throttled"`, `"pending"`, `"disconnected"`, or `"connection_timeout"`. `null` until the first `stream_status` message |
-| `suggestions`              | `Suggestion[]`          | AI suggestions, oldest first, capped at 50                                   |
+| `suggestions`              | `Suggestion[]`          | AI suggestions                                                 |
 | `transcripts`              | `TranscriptLine[]`      | Live transcript lines, ordered by start time                                 |
 | `sentiment`                | `Sentiment \| null`     | Latest sentiment reading                                                     |
 | `lastError`                | `Error \| null`         | Most recent error                                                            |
